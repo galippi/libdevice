@@ -46,6 +46,7 @@ class LibDevice
     {
       reset();
     }
+    ~LibDevice();
     static void registerDevice(LibDeviceBase *device);
     static t_device_fd open(const std::string& name, int flags);
     static t_device_fd open(const char *name, int flags)
@@ -88,7 +89,6 @@ public:
   double val;
   int fd;
   int connectionCtr;
-protected:
   std::string name;
 };
 

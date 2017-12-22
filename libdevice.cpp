@@ -1,5 +1,5 @@
 #include <assert.h>
-//#include <memory.h>
+#include <stdio.h>
 
 #include "libdevice.h"
 
@@ -109,6 +109,17 @@ int LibDevice::write(t_device_fd fd, const void *buf, unsigned int n)
   assert(deviceIsValid(fd));
   return deviceDescr[fd]->write(deviceFd[fd], buf, n);
 }
+
+LibDevice::~LibDevice()
+{
+  auto devDescrPtr = deviceDescr.begin();
+  while (devDescrPtr != deviceDescr.end())
+  {
+    fprintf(stderr, "Warning: device %s is not closed!\n", devDescrPtr->second->getName());
+    devDescrPtr++;
+  }
+}
+
 
 extern "C" t_device_fd device_open(const char *device, int flags)
 {

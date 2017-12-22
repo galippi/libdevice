@@ -1,6 +1,7 @@
 #include <map>
 
 #include <memory.h>
+#include <stdio.h>
 
 #include "libdevice.h"
 
@@ -10,6 +11,7 @@ class LibDeviceAdc : public LibDeviceBase
 {
 public:
   LibDeviceAdc(){}
+  ~LibDeviceAdc();
   virtual const char *getName(void){return "adc";}
   t_device_fd open(const char *name, int flags)
   {
@@ -92,4 +94,15 @@ static LibDeviceAdc adc;
 void registerAdcDevice(void)
 {
   LibDevice::registerDevice(&adc);
+}
+
+LibDeviceAdc::~LibDeviceAdc()
+{ /* debug info: check that all bus is closed */
+  for (size_t i = 0; i < busAdc.size(); i++)
+  {
+    if (busAdc[i] != NULL)
+    { /* bus is not freed up */
+      fprintf(stderr, "Warning: LibDeviceAdc::~LibDeviceAdc - not freed up bus %s!\n", busAdc[i]->name.c_str());
+    }
+  }
 }
