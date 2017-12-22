@@ -13,6 +13,9 @@ extern int device_dio_write(int fd, const void *buf, unsigned int n);
 
 void registerDioDevice(void);
 
+int  device_dio_write_char(int fd, char val);
+char device_dio_read_char(int fd);
+
 #ifdef __cplusplus
 }
 #endif

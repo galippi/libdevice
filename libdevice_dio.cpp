@@ -106,3 +106,15 @@ LibDeviceDio::~LibDeviceDio()
     }
   }
 }
+
+int device_dio_write_char(int fd, char val)
+{
+  return device_write(fd, &val, sizeof(val));
+}
+
+char device_dio_read_char(int fd)
+{
+  char val;
+  device_read(fd, &val, sizeof(val));
+  return val;
+}
