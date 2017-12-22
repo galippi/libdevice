@@ -36,6 +36,22 @@ class LibDeviceBase
     }
 };
 
+#include <vector>
+
+class DeviceFd
+{
+public:
+  DeviceFd()
+  {
+    nextFree = 0;
+  }
+  t_device_fd GetNextFreeFd(void);
+  void ReleaseFd(t_device_fd);
+  std::vector <t_device_fd> freeFdList;
+
+  t_device_fd nextFree;
+};
+
 #include <string>
 #include <map>
 
@@ -74,6 +90,7 @@ class LibDevice
     static int deviceIdxNext;
     static int simTimer_us;
     static std::multimap <uint32_t, int> interruptCallback;
+    static DeviceFd fdHandler;
 };
 
 class DeviceBus
@@ -90,22 +107,6 @@ public:
   int fd;
   int connectionCtr;
   std::string name;
-};
-
-#include <vector>
-
-class DeviceFd
-{
-public:
-  DeviceFd()
-  {
-    nextFree = 0;
-  }
-  t_device_fd GetNextFreeFd(void);
-  int ReleaseFd(t_device_fd);
-  std::vector <t_device_fd> freeFdList;
-
-  t_device_fd nextFree;
 };
 
 #endif /* __cplusplus */

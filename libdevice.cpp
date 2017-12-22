@@ -12,36 +12,21 @@ int LibDevice::deviceIdxNext = 0;
 int LibDevice::simTimer_us = 0;
 std::multimap <uint32_t, int> LibDevice::interruptCallback;
 LibDevice libDevice;
+DeviceFd LibDevice::fdHandler;
 
 void LibDevice::registerDevice(LibDeviceBase *device)
 {
   deviceList[device->getName()] = device;
 }
 
-int LibDevice::deviceIdxGetNextFree(void)
+t_device_fd LibDevice::deviceIdxGetNextFree(void)
 {
-  if (deviceIdxNext < 0x7fffffff)
-  {
-    int idx = deviceIdxNext;
-    deviceIdxNext ++;
-    return idx;
-  }else
-  {
-    /* not implemented searching */
-  }
-  assert(0); /* too many device open */
-  return -1;
+  return fdHandler.GetNextFreeFd();
 }
 
-void LibDevice::deviceIdxRelease(int fd)
+void LibDevice::deviceIdxRelease(t_device_fd fd)
 {
-  //assert(deviceIsValid(fd));
-  deviceDescr.erase(fd);
-  deviceFd.erase(fd);
-  while ((deviceIdxNext > 0) && (deviceDescr.find(deviceIdxNext -1) == deviceDescr.end()))
-  {
-    deviceIdxNext--;
-  }
+  fdHandler.ReleaseFd(fd);
   return;
 }
 
@@ -88,6 +73,8 @@ int LibDevice::close(t_device_fd fd)
 {
   assert(deviceIsValid(fd));
   int res = deviceDescr[fd]->close(deviceFd[fd]);
+  deviceDescr.erase(fd);
+  deviceFd.erase(fd);
   deviceIdxRelease(fd);
   return res;
 }
@@ -119,7 +106,6 @@ LibDevice::~LibDevice()
     devDescrPtr++;
   }
 }
-
 
 extern "C" t_device_fd device_open(const char *device, int flags)
 {
@@ -163,13 +149,19 @@ t_device_fd DeviceFd::GetNextFreeFd(void)
     return fd;
   }else
   {
-    t_device_fd fd = nextFree;
-    nextFree++;
-    return fd;
+    if (nextFree < 0x7fffffff)
+    {
+      t_device_fd fd = nextFree;
+      nextFree++;
+      return fd;
+    }else
+    { /* too many device -> error */
+      return -1;
+    }
   }
 }
 
-int DeviceFd::ReleaseFd(t_device_fd fd)
+void DeviceFd::ReleaseFd(t_device_fd fd)
 {
   if ((fd >= 0) && (fd < nextFree))
   {
@@ -180,9 +172,8 @@ int DeviceFd::ReleaseFd(t_device_fd fd)
     {
       freeFdList.push_back(fd);
     }
-    return 0;
   }else
-  {
-    return -1;
+  { /* invalid descriptor -> error case */
+    assert(0);
   }
 }
