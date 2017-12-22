@@ -34,6 +34,7 @@ TARGET_DIR=.
 CPPFILES = $(TARGET).cpp
 CPPFILES+= libdevice.cpp
 CPPFILES+= libdevice_adc.cpp
+CPPFILES+= libdevice_dio.cpp
 #CPPFILES+= debug.cpp
 #CPPFILES+= osm_xml.cpp
 #CFILES    = $(TARGET).c
