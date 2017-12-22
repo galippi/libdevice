@@ -1,0 +1,4 @@
+*.d
+*.o
+*.exe
+libdevice_test.exe.stackdump
