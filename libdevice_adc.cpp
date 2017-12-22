@@ -106,3 +106,15 @@ LibDeviceAdc::~LibDeviceAdc()
     }
   }
 }
+
+int device_adc_write_double(int fd, double val)
+{
+  return device_write(fd, &val, sizeof(val));
+}
+
+double device_adc_read_double(int fd)
+{
+  double val;
+  device_read(fd, &val, sizeof(val));
+  return val;
+}

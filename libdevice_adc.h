@@ -11,6 +11,9 @@ extern int device_adc_ioctl(int fd, unsigned long int request, void *data);
 extern int device_adc_read(int fd, void *buf, unsigned int n);
 extern int device_adc_write(int fd, const void *buf, unsigned int n);
 
+extern int device_adc_write_double(int fd, double val);
+extern double device_adc_read_double(int fd);
+
 void registerAdcDevice(void);
 
 #ifdef __cplusplus
