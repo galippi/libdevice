@@ -93,20 +93,38 @@ class LibDevice
     static DeviceFd fdHandler;
 };
 
-class DeviceBus
+class DeviceBusBase
 {
 public:
-  DeviceBus(const char *name, int fd)
+  DeviceBusBase(const char *name, int fd)
   {
     this->name = name;
     this->fd = fd;
-    val = 0;
     connectionCtr = 1;
   }
-  double val;
   int fd;
   int connectionCtr;
   std::string name;
+};
+
+class DeviceBusDouble : public DeviceBusBase
+{
+public:
+  DeviceBusDouble(const char *name, int fd) : DeviceBusBase(name, fd)
+  {
+    val = 0;
+  }
+  double val;
+};
+
+class DeviceBusChar : public DeviceBusBase
+{
+public:
+  DeviceBusChar(const char *name, int fd) : DeviceBusBase(name, fd)
+  {
+    val = 0;
+  }
+  char val;
 };
 
 #endif /* __cplusplus */

@@ -24,7 +24,7 @@ public:
     t_device_fd fd = fdHandler.GetNextFreeFd();
     if (fd >= 0)
     {
-      DeviceBus *busPtr = new DeviceBus(name, fd);
+      DeviceBusDouble *busPtr = new DeviceBusDouble(name, fd);
       busListAdc[name] = busPtr;
       if ((unsigned)fd >= busAdc.size())
       {
@@ -84,8 +84,8 @@ public:
   }
 
 protected:
-  std::map <std::string, DeviceBus*> busListAdc;
-  std::vector <DeviceBus*> busAdc;
+  std::map <std::string, DeviceBusDouble*> busListAdc;
+  std::vector <DeviceBusDouble*> busAdc;
   DeviceFd fdHandler;
 };
 
