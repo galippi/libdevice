@@ -17,7 +17,7 @@ void it(t_TimerCallBack *data)
     idx = 0;
     return;
   }
-  static const uint32_t t[] = {300, 1125, 1500};
+  static const uint32_t t[] = {300, 1125, 1500, 2222, 2700};
   assert(idx < (sizeof(t)/sizeof(t[0])));
   assert(data->timer == t[idx]);
   idx++;
@@ -39,6 +39,10 @@ int main(int argc, const char **argv)
     timer.timer = 125;
     device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer);
     device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep);
+    assert(device_systimer_setCb(e_DeviceTimerSetTimer, 1700, it) < 0);
+    device_systimer_setCb(e_DeviceTimerSetTimer, 2700, it);
+    device_systimer_setCb(e_DeviceTimerSetTimerDelta, 222, it);
+    device_systimer_step(1000);
   }
   registerAdcDevice();
   registerDioDevice();

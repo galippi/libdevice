@@ -145,3 +145,15 @@ LibDeviceTimer::~LibDeviceTimer()
     }
   }
 }
+
+int  device_timer_step(int fd, uint32_t val)
+{
+  t_DeviceTimerStep timerStep = {val};
+  return device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep);
+}
+
+int  device_timer_setCb(int fd, e_DeviceTimerIoctl mode, uint32_t val, t_DeviceTimerCbFunc cb)
+{
+  t_DeviceTimerSetTimer timer = {val, cb};
+  return device_ioctl(systemTimer, mode, (void*)&timer);
+}

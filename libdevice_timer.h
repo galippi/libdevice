@@ -41,6 +41,18 @@ typedef enum
 
 extern t_device_fd systemTimer;
 
+int device_timer_step(int fd, uint32_t val);
+static inline int device_systimer_step(uint32_t val)
+{
+  return device_timer_step(systemTimer, val);
+}
+
+int device_timer_setCb(int fd, e_DeviceTimerIoctl mode, uint32_t val, t_DeviceTimerCbFunc cb);
+static inline int  device_systimer_setCb(e_DeviceTimerIoctl mode, uint32_t val, t_DeviceTimerCbFunc cb)
+{
+  return device_timer_setCb(systemTimer, mode, val, cb);
+}
+
 #ifdef __cplusplus
 }
 #endif
