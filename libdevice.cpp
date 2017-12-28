@@ -11,7 +11,6 @@ public:
     this->fd = fd;
     device = dev;
   }
-  const char *getName(void){return device->getName();}
   t_device_fd fd;
   LibDeviceBase *device;
 };
@@ -127,7 +126,7 @@ LibDevice::~LibDevice()
   auto devDescrPtr = deviceDescr.begin();
   while (devDescrPtr != deviceDescr.end())
   {
-    fprintf(stderr, "Warning: device %s is not closed!\n", devDescrPtr->second->getName());
+    fprintf(stderr, "Warning: device %s is not closed!\n", devDescrPtr->second->device->getName());
     devDescrPtr++;
   }
 }
