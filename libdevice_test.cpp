@@ -2,13 +2,31 @@
 #include <math.h>
 
 #include "libdevice.h"
+#include "libdevice_timer.h"
 #include "libdevice_adc.h"
 #include "libdevice_dio.h"
+
+void it(t_TimerCallBack *data)
+{
+  printf("Timercb=%u\n", data->timer);
+}
 
 int main(int argc, const char **argv)
 {
   (void)argc;
   (void)argv;
+  registerTimerDevice();
+  {
+    t_DeviceTimerSetTimer timer = {1500, it};
+    device_ioctl(systemTimer, e_DeviceTimerSetTimer, (void*)&timer);
+    timer.timer = 300;
+    device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer);
+    t_DeviceTimerStep timerStep = {1000};
+    device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep);
+    timer.timer = 125;
+    device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer);
+    device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep);
+  }
   registerAdcDevice();
   registerDioDevice();
   t_device_fd fd1 = device_open("/dev/adc/Ub", 0);
