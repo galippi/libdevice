@@ -8,7 +8,20 @@
 
 void it(t_TimerCallBack *data)
 {
+#if 0
   printf("Timercb=%u\n", data->timer);
+#else
+  static unsigned idx = 0;
+  if (data == NULL)
+  {
+    idx = 0;
+    return;
+  }
+  static const uint32_t t[] = {300, 1125, 1500};
+  assert(idx < (sizeof(t)/sizeof(t[0])));
+  assert(data->timer == t[idx]);
+  idx++;
+#endif
 }
 
 int main(int argc, const char **argv)
