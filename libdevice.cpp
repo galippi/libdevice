@@ -8,8 +8,6 @@
 std::map <std::string, LibDeviceBase*> LibDevice::deviceList;
 std::map <int, LibDeviceBase*> LibDevice::deviceDescr;
 std::map <int, int> LibDevice::deviceFd;
-int LibDevice::deviceIdxNext = 0;
-int LibDevice::simTimer_us = 0;
 LibDevice libDevice;
 DeviceFd LibDevice::fdHandler;
 

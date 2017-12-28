@@ -61,7 +61,6 @@ class LibDevice
   public:
     LibDevice()
     {
-      reset();
     }
     ~LibDevice();
     static void registerDevice(LibDeviceBase *device);
@@ -77,19 +76,12 @@ class LibDevice
     static int write(t_device_fd fd, const void *buf, unsigned int n);
     static int ioctl(t_device_fd fd, unsigned long int request, void *data);
     static int deviceIsValid(t_device_fd fd) /*const*/;
-    static void step(double dT);
-    static void step_us(uint32_t dT);
-    static void step_ns(uint32_t dT);
-    static void reset(){};
-    static void registerInterrupt(uint32_t dt);
   protected:
     static int deviceIdxGetNextFree(void);
     static void deviceIdxRelease(int fd);
     static std::map <std::string, LibDeviceBase*> deviceList;
     static std::map <int, LibDeviceBase*> deviceDescr;
     static std::map <int, int> deviceFd;
-    static int deviceIdxNext;
-    static int simTimer_us;
     static DeviceFd fdHandler;
 };
 
