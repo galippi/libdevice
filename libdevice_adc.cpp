@@ -61,7 +61,7 @@ public:
         (busAdc[fd] != NULL))
     {
       double val = busAdc[fd]->val;
-      memcpy(buf, &val, sizeof(val));
+      memcpy(buf, &val, n);
       return sizeof(val);
     }else
     {
