@@ -3,11 +3,23 @@
 
 #include "libdevice.h"
 
+class LibDeviceDescr
+{
+public:
+  LibDeviceDescr(LibDeviceBase *dev, t_device_fd fd)
+  {
+    this->fd = fd;
+    device = dev;
+  }
+  const char *getName(void){return device->getName();}
+  t_device_fd fd;
+  LibDeviceBase *device;
+};
+
 /* create static instance which call be called externally */
 
 std::map <std::string, LibDeviceBase*> LibDevice::deviceList;
-std::map <int, LibDeviceBase*> LibDevice::deviceDescr;
-std::map <int, int> LibDevice::deviceFd;
+std::map <int, LibDeviceDescr*> LibDevice::deviceDescr;
 LibDevice libDevice;
 DeviceFd LibDevice::fdHandler;
 
@@ -42,7 +54,7 @@ void LibDevice::deviceIdxRelease(t_device_fd fd)
 
 int LibDevice::deviceIsValid(t_device_fd fd) /* const */
 {
-  if (deviceFd.find(fd) != deviceFd.end())
+  if (deviceDescr.find(fd) != deviceDescr.end())
     return 1;
   else
     return 0;
@@ -65,8 +77,8 @@ t_device_fd LibDevice::open(const std::string& name, int flags)
         if (fd >= 0)
         {
           int idx = deviceIdxGetNextFree();
-          deviceDescr[idx] = devItPtr->second;
-          deviceFd[idx] = fd;
+          LibDeviceDescr *dev = new LibDeviceDescr(devItPtr->second, fd);
+          deviceDescr[idx] = dev;
           return idx;
         }else
         { /* free up the already reserved index */
@@ -82,9 +94,9 @@ t_device_fd LibDevice::open(const std::string& name, int flags)
 int LibDevice::close(t_device_fd fd)
 {
   assert(deviceIsValid(fd));
-  int res = deviceDescr[fd]->close(deviceFd[fd]);
+  auto dev = deviceDescr[fd];
+  int res = dev->device->close(dev->fd);
   deviceDescr.erase(fd);
-  deviceFd.erase(fd);
   deviceIdxRelease(fd);
   return res;
 }
@@ -92,19 +104,22 @@ int LibDevice::close(t_device_fd fd)
 int LibDevice::ioctl(t_device_fd fd, unsigned long int request, void *data)
 {
   assert(deviceIsValid(fd));
-  return deviceDescr[fd]->ioctl(deviceFd[fd], request, data);
+  auto dev = deviceDescr[fd];
+  return dev->device->ioctl(dev->fd, request, data);
 }
 
 int LibDevice::read(t_device_fd fd, void *buf, unsigned int n)
 {
   assert(deviceIsValid(fd));
-  return deviceDescr[fd]->read(deviceFd[fd], buf, n);
+  auto dev = deviceDescr[fd];
+  return dev->device->read(dev->fd, buf, n);
 }
 
 int LibDevice::write(t_device_fd fd, const void *buf, unsigned int n)
 {
   assert(deviceIsValid(fd));
-  return deviceDescr[fd]->write(deviceFd[fd], buf, n);
+  auto dev = deviceDescr[fd];
+  return dev->device->write(dev->fd, buf, n);
 }
 
 LibDevice::~LibDevice()

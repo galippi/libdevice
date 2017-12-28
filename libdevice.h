@@ -32,9 +32,6 @@ class LibDeviceBase
     { // not used function
       assert(0);
     }
-    virtual void step(double dT)
-    { /* do nothing by default */
-    }
 };
 
 #include <vector>
@@ -56,6 +53,8 @@ public:
 #include <string>
 #include <map>
 
+class LibDeviceDescr;
+
 class LibDevice
 {
   public:
@@ -67,7 +66,6 @@ class LibDevice
     static t_device_fd open(const std::string& name, int flags);
     static t_device_fd open(const char *name, int flags)
     {
-      //std::string str = name;
       std::string str(name);
       return open(str, flags);
     }
@@ -80,8 +78,7 @@ class LibDevice
     static int deviceIdxGetNextFree(void);
     static void deviceIdxRelease(int fd);
     static std::map <std::string, LibDeviceBase*> deviceList;
-    static std::map <int, LibDeviceBase*> deviceDescr;
-    static std::map <int, int> deviceFd;
+    static std::map <int, LibDeviceDescr*> deviceDescr;
     static DeviceFd fdHandler;
 };
 
