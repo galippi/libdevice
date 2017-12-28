@@ -10,9 +10,21 @@ std::map <int, LibDeviceBase*> LibDevice::deviceDescr;
 std::map <int, int> LibDevice::deviceFd;
 int LibDevice::deviceIdxNext = 0;
 int LibDevice::simTimer_us = 0;
-std::multimap <uint32_t, int> LibDevice::interruptCallback;
 LibDevice libDevice;
 DeviceFd LibDevice::fdHandler;
+
+LibDeviceBase::~LibDeviceBase()
+{ /* debug info: check that all bus is closed */
+#if 0
+  for (size_t i = 0; i < bus.size(); i++)
+  {
+    if (bus[i] != NULL)
+    { /* bus is not freed up */
+      fprintf(stderr, "Warning: LibDeviceBase::~LibDeviceBase - not freed up bus %s (device is %s)!\n", bus[i]->name.c_str(), getName());
+    }
+  }
+#endif
+}
 
 void LibDevice::registerDevice(LibDeviceBase *device)
 {

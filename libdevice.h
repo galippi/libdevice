@@ -22,6 +22,7 @@ class LibDeviceBase
 {
   public:
     LibDeviceBase(){};
+    virtual ~LibDeviceBase();
     virtual const char *getName(void) = 0;
     virtual t_device_fd open(const char *name, int flags) = 0;
     virtual int close(t_device_fd fd) = 0;
@@ -89,7 +90,6 @@ class LibDevice
     static std::map <int, int> deviceFd;
     static int deviceIdxNext;
     static int simTimer_us;
-    static std::multimap <uint32_t, int> interruptCallback;
     static DeviceFd fdHandler;
 };
 
@@ -125,6 +125,16 @@ public:
     val = 0;
   }
   char val;
+};
+
+class DeviceBusU32 : public DeviceBusBase
+{
+public:
+  DeviceBusU32(const char *name, int fd) : DeviceBusBase(name, fd)
+  {
+    val = 0;
+  }
+  uint32_t val;
 };
 
 #endif /* __cplusplus */
