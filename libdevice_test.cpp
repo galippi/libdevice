@@ -5,6 +5,7 @@
 #include "libdevice_timer.h"
 #include "libdevice_adc.h"
 #include "libdevice_dio.h"
+#include "libdevice_can.h"
 
 void it(t_TimerCallBack *data)
 {
@@ -27,6 +28,20 @@ void it(t_TimerCallBack *data)
 void ubWriteCb(t_BusWriteCallBack * data)
 {
   assert(fabs(device_adc_read_double(data->fdBus)-3.33) < 1e-9);
+}
+
+static void CAN_Test(void)
+{
+  registerCANDevice();
+  t_device_fd fd_can1 = device_open("/dev/can/J1939", 0);
+  assert(fd_can1 >= 0);
+  t_device_fd fd_can2 = device_open("/dev/can/J1939", 0);
+  assert(fd_can2 >= 0);
+  t_device_fd fd_can3 = device_open("/dev/can/sensor", 0);
+  assert(fd_can3 >= 0);
+  assert(device_close(fd_can1) == 0);
+  assert(device_close(fd_can2) == 0);
+  assert(device_close(fd_can3) == 0);
 }
 
 int main(int argc, const char **argv)
@@ -83,5 +98,6 @@ int main(int argc, const char **argv)
   assert(device_close(fd_pcv) == 0);
   assert((fd1 = device_open("/dev/adc/Ub", 0)) >= 0);
   assert(device_close(fd1) == 0);
+  CAN_Test();
   return 0;
 }

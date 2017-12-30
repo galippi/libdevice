@@ -36,6 +36,7 @@ CPPFILES+= libdevice.cpp
 CPPFILES+= libdevice_adc.cpp
 CPPFILES+= libdevice_dio.cpp
 CPPFILES+= libdevice_timer.cpp
+CPPFILES+= libdevice_can.cpp
 #CPPFILES+= debug.cpp
 #CPPFILES+= osm_xml.cpp
 #CFILES    = $(TARGET).c
