@@ -38,18 +38,14 @@ class LibDevice
     static int deviceIsValid(t_device_fd fd) /*const*/;
   protected:
     static int deviceIdxGetNextFree(void);
-    static void deviceIdxRelease(int fd);
-    static std::map <std::string, LibDeviceBase*> deviceList;
-    static std::map <int, LibDeviceDescr*> deviceDescr;
-    static DeviceFd fdHandler;
+    static void deviceIdxRelease(t_device_fd fd);
 };
 
 /* create static instance which call be called externally */
 
-std::map <std::string, LibDeviceBase*> LibDevice::deviceList;
-std::map <int, LibDeviceDescr*> LibDevice::deviceDescr;
-LibDevice libDevice;
-DeviceFd LibDevice::fdHandler;
+static std::map <std::string, LibDeviceBase*> deviceList;
+static std::vector <LibDeviceDescr*> deviceDescr;
+static DeviceFd fdHandler;
 
 LibDeviceBase::~LibDeviceBase()
 { /* debug info: check that all bus is closed */
@@ -87,7 +83,7 @@ void LibDevice::deviceIdxRelease(t_device_fd fd)
 
 int LibDevice::deviceIsValid(t_device_fd fd) /* const */
 {
-  if (deviceDescr.find(fd) != deviceDescr.end())
+  if ((fd >= 0) && (fd < (int)deviceDescr.size()) && (deviceDescr[fd]->device != NULL))
     return 1;
   else
     return 0;
@@ -111,11 +107,16 @@ t_device_fd LibDevice::open(const std::string& name, int flags)
         {
           int idx = deviceIdxGetNextFree();
           LibDeviceDescr *dev = new LibDeviceDescr(devItPtr->second, fd);
-          deviceDescr[idx] = dev;
+          if (idx < (int)deviceDescr.size())
+          {
+            deviceDescr[idx] = dev;
+          }else
+          {
+            deviceDescr.push_back(dev);
+          }
           return idx;
         }else
-        { /* free up the already reserved index */
-          //deviceIdxRelease(idx);
+        { /* bus-open error -> nothing to do */
         }
         return fd;
       }
@@ -129,7 +130,7 @@ int LibDevice::close(t_device_fd fd)
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
   int res = dev->device->close(dev->fd);
-  deviceDescr.erase(fd);
+  deviceDescr[fd]->device = NULL;
   deviceIdxRelease(fd);
   return res;
 }
@@ -177,11 +178,12 @@ int LibDevice::write(t_device_fd fd, const void *buf, unsigned int n)
 
 LibDevice::~LibDevice()
 {
-  auto devDescrPtr = deviceDescr.begin();
-  while (devDescrPtr != deviceDescr.end())
+  for (unsigned idx = 0; idx < deviceDescr.size(); idx++)
   {
-    fprintf(stderr, "Warning: device %s is not closed!\n", devDescrPtr->second->device->getName());
-    devDescrPtr++;
+    if (deviceDescr[idx]->device != NULL)
+    {
+      fprintf(stderr, "Warning: device %s is not closed!\n", deviceDescr[idx]->device->getName());
+    }
   }
 }
 
@@ -251,13 +253,7 @@ void DeviceFd::ReleaseFd(t_device_fd fd)
 {
   if ((fd >= 0) && (fd < nextFree))
   {
-    if (fd == (nextFree - 1))
-    {
-      nextFree --;
-    }else
-    {
-      freeFdList.push_back(fd);
-    }
+    freeFdList.push_back(fd);
   }else
   { /* invalid descriptor -> error case */
     assert(0);
