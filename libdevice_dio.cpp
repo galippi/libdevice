@@ -18,7 +18,7 @@ public:
     auto devItPtr = busList.find(name);
     if (devItPtr != busList.end())
     {
-      return devItPtr->second->open();
+      return devItPtr->second->attach();
     }
     t_device_fd fd = fdHandler.GetNextFreeFd();
     if (fd >= 0)
@@ -39,7 +39,7 @@ public:
   {
     if (bus[fd] != NULL)
     {
-      if (bus[fd]->close() != 0)
+      if (bus[fd]->detach() != 0)
       { /* other connection remains -> release this connection, but keep the bus */
       }else
       { /* last connection -> free up the bus */

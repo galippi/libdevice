@@ -84,12 +84,12 @@ public:
     this->fd = fd;
     connectionCtr = 1;
   }
-  int open()
+  int attach()
   {
     connectionCtr++;
     return fd;
   }
-  int close()
+  int detach()
   {
     assert(connectionCtr > 0);
     connectionCtr--;
