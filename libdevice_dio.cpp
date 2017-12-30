@@ -7,59 +7,23 @@
 
 #include "libdevice_dio.h"
 
-class LibDeviceDio : public LibDeviceBase
+class LibDeviceDio : public LibDeviceBaseHandler
 {
 public:
   LibDeviceDio(){}
   ~LibDeviceDio();
   virtual const char *getName(void){return "dio";}
-  t_device_fd open(const char *name, int flags)
+  DeviceBusBase *createBus(const char *name, t_device_fd fd)
   {
-    auto devItPtr = busList.find(name);
-    if (devItPtr != busList.end())
-    {
-      return devItPtr->second->attach();
-    }
-    t_device_fd fd = fdHandler.GetNextFreeFd();
-    if (fd >= 0)
-    {
-      DeviceBusChar *busPtr = new DeviceBusChar(name, fd);
-      busList[name] = busPtr;
-      if ((unsigned)fd >= bus.size())
-      {
-        bus.push_back(busPtr);
-      }else
-      {
-        bus[fd] = busPtr;
-      }
-    }
-    return fd;
-  }
-  virtual int close(t_device_fd fd)
-  {
-    if (bus[fd] != NULL)
-    {
-      if (bus[fd]->detach() != 0)
-      { /* other connection remains -> release this connection, but keep the bus */
-      }else
-      { /* last connection -> free up the bus */
-        busList.erase(bus[fd]->getName());
-        delete bus[fd];
-        bus[fd] = NULL;
-        fdHandler.ReleaseFd(fd);
-      }
-      return 0;
-    }else
-    {
-      return -1;
-    }
+    return new DeviceBusChar(name, fd);
   }
   virtual int read(t_device_fd fd, void *buf, unsigned int n)
   {
+    DeviceBusChar *dev = (DeviceBusChar *)bus[fd];
     if ((n == sizeof(char)) &&
-        (bus[fd] != NULL))
+        (dev != NULL))
     {
-      char val = bus[fd]->val;
+      char val = dev->val;
       memcpy(buf, &val, sizeof(val));
       return sizeof(val);
     }else
@@ -69,23 +33,19 @@ public:
   }
   virtual int write(t_device_fd fd, const void *buf, unsigned int n)
   {
+    DeviceBusChar *dev = (DeviceBusChar *)bus[fd];
     if ((n == sizeof(char)) &&
-        (bus[fd] != NULL))
+        (dev != NULL))
     {
       char val;
       memcpy(&val, buf, sizeof(val));
-      bus[fd]->val = val;
+      dev->val = val;
       return sizeof(val);
     }else
     {
       return -1;
     }
   }
-
-protected:
-  std::map <std::string, DeviceBusChar*> busList;
-  std::vector <DeviceBusChar*> bus;
-  DeviceFd fdHandler;
 };
 
 static LibDeviceDio dio;

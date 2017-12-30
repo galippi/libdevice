@@ -34,9 +34,32 @@ class LibDeviceBase
     }
 };
 
-extern void LibDeviceRegisterDevice(LibDeviceBase *device);
+class DeviceBusBase;
 
+#include <string>
+#include <map>
 #include <vector>
+
+class LibDeviceBaseHandler : public LibDeviceBase
+{
+  public:
+    LibDeviceBaseHandler()
+    {
+      nextFree = 0;
+    }
+    virtual DeviceBusBase *createBus(const char *name, t_device_fd fd) = 0;
+    t_device_fd open(const char *name, int flags);
+    int close(t_device_fd fd);
+    std::map <std::string, DeviceBusBase*> busList;
+    std::vector <DeviceBusBase*> bus;
+    t_device_fd GetNextFreeFd(void);
+    void ReleaseFd(t_device_fd);
+protected:
+    t_device_fd nextFree;
+    std::vector <t_device_fd> freeFdList;
+};
+
+extern void LibDeviceRegisterDevice(LibDeviceBase *device);
 
 class DeviceFd
 {
@@ -51,9 +74,6 @@ public:
 
   t_device_fd nextFree;
 };
-
-#include <string>
-#include <map>
 
 typedef struct s_BusWriteCallBack t_BusWriteCallBack;
 

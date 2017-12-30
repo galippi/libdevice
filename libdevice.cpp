@@ -259,3 +259,80 @@ void DeviceFd::ReleaseFd(t_device_fd fd)
     assert(0);
   }
 }
+
+t_device_fd LibDeviceBaseHandler::open(const char *name, int flags)
+{
+  auto devItPtr = busList.find(name);
+  if (devItPtr != busList.end())
+  {
+    return devItPtr->second->attach();
+  }
+  t_device_fd fd = GetNextFreeFd();
+  if (fd >= 0)
+  {
+    DeviceBusBase *busPtr = createBus(name, fd);
+    busList[name] = busPtr;
+    if ((unsigned)fd >= bus.size())
+    {
+      bus.push_back(busPtr);
+    }else
+    {
+      bus[fd] = busPtr;
+    }
+  }
+  return fd;
+}
+
+int LibDeviceBaseHandler::close(t_device_fd fd)
+{
+  auto busPtr = bus[fd];
+  if (busPtr != NULL)
+  {
+    if (busPtr->detach() != 0)
+    { /* other connection remains -> keep the bus  (nothing to do) */
+    }else
+    { /* last connection -> free up the bus */
+      busList.erase(busPtr->getName());
+      delete busPtr;
+      bus[fd] = NULL;
+      ReleaseFd(fd);
+    }
+    return 0;
+  }else
+  {
+    return -1;
+  }
+}
+
+t_device_fd LibDeviceBaseHandler::GetNextFreeFd(void)
+{
+  if (freeFdList.size() != 0)
+  {
+    int idx = freeFdList.size() - 1;
+    t_device_fd fd = freeFdList[idx];
+    freeFdList.pop_back();
+    return fd;
+  }else
+  {
+    if (nextFree < 0x7fffffff)
+    {
+      t_device_fd fd = nextFree;
+      nextFree++;
+      return fd;
+    }else
+    { /* too many device -> error */
+      return -1;
+    }
+  }
+}
+
+void LibDeviceBaseHandler::ReleaseFd(t_device_fd fd)
+{
+  if ((fd >= 0) && (fd < nextFree))
+  {
+    freeFdList.push_back(fd);
+  }else
+  { /* invalid descriptor -> error case */
+    assert(0);
+  }
+}

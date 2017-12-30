@@ -16,52 +16,15 @@ public:
   std::multimap <uint32_t, t_DeviceTimerCbFunc> interruptCallback;
 };
 
-class LibDeviceTimer : public LibDeviceBase
+class LibDeviceTimer : public LibDeviceBaseHandler
 {
 public:
   LibDeviceTimer(){}
   ~LibDeviceTimer();
   virtual const char *getName(void){return "timer";}
-  t_device_fd open(const char *name, int flags)
+  DeviceBusBase *createBus(const char *name, t_device_fd fd)
   {
-    auto devItPtr = busList.find(name);
-    if (devItPtr != busList.end())
-    {
-      return devItPtr->second->attach();
-    }
-    t_device_fd fd = fdHandler.GetNextFreeFd();
-    if (fd >= 0)
-    {
-      DeviceBusTimer *busPtr = new DeviceBusTimer(name, fd);
-      busList[name] = busPtr;
-      if ((unsigned)fd >= bus.size())
-      {
-        bus.push_back(busPtr);
-      }else
-      {
-        bus[fd] = busPtr;
-      }
-    }
-    return fd;
-  }
-  virtual int close(t_device_fd fd)
-  {
-    if (bus[fd] != NULL)
-    {
-      if (bus[fd]->detach() != 0)
-      { /* other connection remains -> release this connection, but keep the bus */
-      }else
-      { /* last connection -> free up the bus */
-        busList.erase(bus[fd]->getName());
-        delete bus[fd];
-        bus[fd] = NULL;
-        fdHandler.ReleaseFd(fd);
-      }
-      return 0;
-    }else
-    {
-      return -1;
-    }
+    return new DeviceBusTimer(name, fd);
   }
   virtual int read(t_device_fd fd, void *buf, unsigned int n)
   {
@@ -73,26 +36,27 @@ public:
   }
   int ioctl(t_device_fd fd, unsigned long int request, void *data)
   {
+    DeviceBusTimer *dev = (DeviceBusTimer *)bus[fd];
     switch (request)
     {
       case e_DeviceTimerStep:
       {
         t_DeviceTimerStep *ptr = (t_DeviceTimerStep*)data;
-        uint32_t newVal = bus[fd]->val + ptr->timer;
-        auto itPtr = bus[fd]->interruptCallback.begin();
-        while ((itPtr != bus[fd]->interruptCallback.end()) && (itPtr->first <= newVal))
+        uint32_t newVal = dev->val + ptr->timer;
+        auto itPtr = dev->interruptCallback.begin();
+        while ((itPtr != dev->interruptCallback.end()) && (itPtr->first <= newVal))
         {
           uint32_t t = itPtr->first;
-          bus[fd]->val = t;
+          dev->val = t;
           //void *ptr = itPtr->second;
            //t_DeviceTimerCbFunc *funcPtr = (t_DeviceTimerCbFunc*)ptr;
            //funcPtr(NULL);
           t_TimerCallBack cbData = {t};
           (*itPtr->second)(&cbData);
-          bus[fd]->interruptCallback.erase(itPtr);
+          dev->interruptCallback.erase(itPtr);
           itPtr++;
         }
-        bus[fd]->val = newVal;
+        dev->val = newVal;
         return 0;
       }
       case e_DeviceTimerSetTimer:
@@ -103,26 +67,21 @@ public:
         if (request == e_DeviceTimerSetTimer)
         {
           timer = ptr->timer;
-          if (timer <= bus[fd]->val)
+          if (timer <= dev->val)
           { /* invalid timer value -> specified time is already ellapsed */
             return -1;
           }
         }else
         {
-          timer = bus[fd]->val + ptr->timer;
+          timer = dev->val + ptr->timer;
         }
-        bus[fd]->interruptCallback.insert(std::pair<uint32_t, t_DeviceTimerCbFunc>(timer, ptr->cbFunc));
+        dev->interruptCallback.insert(std::pair<uint32_t, t_DeviceTimerCbFunc>(timer, ptr->cbFunc));
         return 0;
       }
       default:
         return -1;
     }
   }
-
-protected:
-  std::map <std::string, DeviceBusTimer*> busList;
-  std::vector <DeviceBusTimer*> bus;
-  DeviceFd fdHandler;
 };
 
 static LibDeviceTimer timer;

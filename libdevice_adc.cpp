@@ -7,60 +7,24 @@
 
 #include "libdevice_adc.h"
 
-class LibDeviceAdc : public LibDeviceBase
+class LibDeviceAdc : public LibDeviceBaseHandler
 {
 public:
   LibDeviceAdc(){}
   ~LibDeviceAdc();
   virtual const char *getName(void){return "adc";}
-  t_device_fd open(const char *name, int flags)
+  DeviceBusBase *createBus(const char *name, t_device_fd fd)
   {
-    auto devItPtr = busList.find(name);
-    if (devItPtr != busList.end())
-    {
-      return devItPtr->second->attach();
-    }
-    t_device_fd fd = fdHandler.GetNextFreeFd();
-    if (fd >= 0)
-    {
-      DeviceBusDouble *busPtr = new DeviceBusDouble(name, fd);
-      busList[name] = busPtr;
-      if ((unsigned)fd >= bus.size())
-      {
-        bus.push_back(busPtr);
-      }else
-      {
-        bus[fd] = busPtr;
-      }
-    }
-    return fd;
+    return new DeviceBusDouble(name, fd);
   }
-  virtual int close(t_device_fd fd)
-  {
-    auto busPtr = bus[fd];
-    if (busPtr != NULL)
-    {
-      if (busPtr->detach() != 0)
-      { /* other connection remains -> keep the bus  (nothing to do) */
-      }else
-      { /* last connection -> free up the bus */
-        busList.erase(busPtr->getName());
-        delete busPtr;
-        bus[fd] = NULL;
-        fdHandler.ReleaseFd(fd);
-      }
-      return 0;
-    }else
-    {
-      return -1;
-    }
-  }
+
   virtual int read(t_device_fd fd, void *buf, unsigned int n)
   {
+    DeviceBusDouble *dev = (DeviceBusDouble *)bus[fd];
     if ((n == sizeof(double)) &&
-        (bus[fd] != NULL))
+        (dev != NULL))
     {
-      double val = bus[fd]->val;
+      double val = dev->val;
       memcpy(buf, &val, n);
       return sizeof(val);
     }else
@@ -70,23 +34,19 @@ public:
   }
   virtual int write(t_device_fd fd, const void *buf, unsigned int n)
   {
+    DeviceBusDouble *dev = (DeviceBusDouble *)bus[fd];
     if ((n == sizeof(double)) &&
-        (bus[fd] != NULL))
+        (dev != NULL))
     {
       double val;
       memcpy(&val, buf, sizeof(val));
-      bus[fd]->val = val;
+      dev->val = val;
       return sizeof(val);
     }else
     {
       return -1;
     }
   }
-
-protected:
-  std::map <std::string, DeviceBusDouble*> busList;
-  std::vector <DeviceBusDouble*> bus;
-  DeviceFd fdHandler;
 };
 
 static LibDeviceAdc adc;
