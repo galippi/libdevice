@@ -34,6 +34,8 @@ class LibDeviceBase
     }
 };
 
+extern void LibDeviceRegisterDevice(LibDeviceBase *device);
+
 #include <vector>
 
 class DeviceFd
@@ -63,35 +65,6 @@ struct s_BusWriteCallBack
   t_device_fd fdDevice;
   void *dataPtr;
   t_BusWriteCbFunc *cbFunc;
-};
-
-class LibDeviceDescr;
-
-class LibDevice
-{
-  public:
-    LibDevice()
-    {
-    }
-    ~LibDevice();
-    static void registerDevice(LibDeviceBase *device);
-    static t_device_fd open(const std::string& name, int flags);
-    static t_device_fd open(const char *name, int flags)
-    {
-      std::string str(name);
-      return open(str, flags);
-    }
-    static int close(t_device_fd fd);
-    static int read(t_device_fd fd, void *buf, unsigned int n);
-    static int write(t_device_fd fd, const void *buf, unsigned int n);
-    static int ioctl(t_device_fd fd, unsigned long int request, void *data);
-    static int deviceIsValid(t_device_fd fd) /*const*/;
-  protected:
-    static int deviceIdxGetNextFree(void);
-    static void deviceIdxRelease(int fd);
-    static std::map <std::string, LibDeviceBase*> deviceList;
-    static std::map <int, LibDeviceDescr*> deviceDescr;
-    static DeviceFd fdHandler;
 };
 
 typedef enum

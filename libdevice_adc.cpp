@@ -93,7 +93,7 @@ static LibDeviceAdc adc;
 
 void registerAdcDevice(void)
 {
-  LibDevice::registerDevice(&adc);
+  LibDeviceRegisterDevice(&adc);
 }
 
 LibDeviceAdc::~LibDeviceAdc()

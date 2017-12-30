@@ -131,7 +131,7 @@ static LibDeviceTimer timer;
 t_device_fd systemTimer = -1;
 void registerTimerDevice(void)
 {
-  LibDevice::registerDevice(&timer);
+  LibDeviceRegisterDevice(&timer);
   systemTimer = device_open("/dev/timer/system", 0);
 }
 

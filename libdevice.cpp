@@ -17,6 +17,33 @@ public:
   std::multimap <t_device_fd, t_BusWriteCallBack*> writeCallback;
 };
 
+class LibDevice
+{
+  public:
+    LibDevice()
+    {
+    }
+    ~LibDevice();
+    static void registerDevice(LibDeviceBase *device);
+    static t_device_fd open(const std::string& name, int flags);
+    static t_device_fd open(const char *name, int flags)
+    {
+      std::string str(name);
+      return open(str, flags);
+    }
+    static int close(t_device_fd fd);
+    static int read(t_device_fd fd, void *buf, unsigned int n);
+    static int write(t_device_fd fd, const void *buf, unsigned int n);
+    static int ioctl(t_device_fd fd, unsigned long int request, void *data);
+    static int deviceIsValid(t_device_fd fd) /*const*/;
+  protected:
+    static int deviceIdxGetNextFree(void);
+    static void deviceIdxRelease(int fd);
+    static std::map <std::string, LibDeviceBase*> deviceList;
+    static std::map <int, LibDeviceDescr*> deviceDescr;
+    static DeviceFd fdHandler;
+};
+
 /* create static instance which call be called externally */
 
 std::map <std::string, LibDeviceBase*> LibDevice::deviceList;
@@ -40,6 +67,11 @@ LibDeviceBase::~LibDeviceBase()
 void LibDevice::registerDevice(LibDeviceBase *device)
 {
   deviceList[device->getName()] = device;
+}
+
+void LibDeviceRegisterDevice(LibDeviceBase *device)
+{
+  LibDevice::registerDevice(device);
 }
 
 t_device_fd LibDevice::deviceIdxGetNextFree(void)

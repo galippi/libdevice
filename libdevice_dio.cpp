@@ -93,7 +93,7 @@ static LibDeviceDio dio;
 
 void registerDioDevice(void)
 {
-  LibDevice::registerDevice(&dio);
+  LibDeviceRegisterDevice(&dio);
 }
 
 LibDeviceDio::~LibDeviceDio()
