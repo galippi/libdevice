@@ -24,21 +24,6 @@ class LibDevice
     {
     }
     ~LibDevice();
-    static void registerDevice(LibDeviceBase *device);
-    static t_device_fd open(const std::string& name, int flags);
-    static t_device_fd open(const char *name, int flags)
-    {
-      std::string str(name);
-      return open(str, flags);
-    }
-    static int close(t_device_fd fd);
-    static int read(t_device_fd fd, void *buf, unsigned int n);
-    static int write(t_device_fd fd, const void *buf, unsigned int n);
-    static int ioctl(t_device_fd fd, unsigned long int request, void *data);
-    static int deviceIsValid(t_device_fd fd) /*const*/;
-  protected:
-    static int deviceIdxGetNextFree(void);
-    static void deviceIdxRelease(t_device_fd fd);
 };
 
 /* create static instance which call be called externally */
@@ -46,6 +31,7 @@ class LibDevice
 static std::map <std::string, LibDeviceBase*> deviceList;
 static std::vector <LibDeviceDescr*> deviceDescr;
 static DeviceFd fdHandler;
+static LibDevice libDevice;
 
 LibDeviceBase::~LibDeviceBase()
 { /* debug info: check that all bus is closed */
@@ -60,28 +46,23 @@ LibDeviceBase::~LibDeviceBase()
 #endif
 }
 
-void LibDevice::registerDevice(LibDeviceBase *device)
+void LibDeviceRegisterDevice(LibDeviceBase *device)
 {
   deviceList[device->getName()] = device;
 }
 
-void LibDeviceRegisterDevice(LibDeviceBase *device)
-{
-  LibDevice::registerDevice(device);
-}
-
-t_device_fd LibDevice::deviceIdxGetNextFree(void)
+static inline t_device_fd deviceIdxGetNextFree(void)
 {
   return fdHandler.GetNextFreeFd();
 }
 
-void LibDevice::deviceIdxRelease(t_device_fd fd)
+static inline void deviceIdxRelease(t_device_fd fd)
 {
   fdHandler.ReleaseFd(fd);
   return;
 }
 
-int LibDevice::deviceIsValid(t_device_fd fd) /* const */
+static inline int deviceIsValid(t_device_fd fd) /* const */
 {
   if ((fd >= 0) && (fd < (int)deviceDescr.size()) && (deviceDescr[fd]->device != NULL))
     return 1;
@@ -89,8 +70,28 @@ int LibDevice::deviceIsValid(t_device_fd fd) /* const */
     return 0;
 }
 
-t_device_fd LibDevice::open(const std::string& name, int flags)
+LibDevice::~LibDevice()
 {
+  for (unsigned idx = 0; idx < deviceDescr.size(); idx++)
+  {
+    if (deviceDescr[idx]->device != NULL)
+    {
+      fprintf(stderr, "Warning: device %s is not closed!\n", deviceDescr[idx]->device->getName());
+    }
+  }
+}
+
+int LibDeviceRegisterWriteCallback(t_device_fd fd, t_BusWriteCbFunc *cbFuncPtr, void *dataPtr)
+{
+  t_BusWriteCallBack *cbPtr = (t_BusWriteCallBack *)malloc(sizeof(t_BusWriteCallBack));
+  cbPtr->cbFunc = cbFuncPtr;
+  cbPtr->dataPtr = dataPtr;
+  return device_ioctl(fd, e_DeviceBaseSetWriteCallback, cbPtr);
+}
+
+extern "C" t_device_fd device_open(const char *device, int flags)
+{
+  std::string name = device;
   if (name.find("/dev/") == 0)
   { /* valid device prefix */
     std::string devName = name.substr(5);
@@ -125,7 +126,7 @@ t_device_fd LibDevice::open(const std::string& name, int flags)
   return -1;
 }
 
-int LibDevice::close(t_device_fd fd)
+extern "C" int device_close(t_device_fd fd)
 {
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
@@ -135,7 +136,7 @@ int LibDevice::close(t_device_fd fd)
   return res;
 }
 
-int LibDevice::ioctl(t_device_fd fd, unsigned long int request, void *data)
+extern "C" int device_ioctl(t_device_fd fd, unsigned long int request, void *data)
 {
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
@@ -154,14 +155,14 @@ int LibDevice::ioctl(t_device_fd fd, unsigned long int request, void *data)
   }
 }
 
-int LibDevice::read(t_device_fd fd, void *buf, unsigned int n)
+extern "C" int device_read(t_device_fd fd, void *buf, unsigned int n)
 {
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
   return dev->device->read(dev->fd, buf, n);
 }
 
-int LibDevice::write(t_device_fd fd, const void *buf, unsigned int n)
+extern "C" int device_write(t_device_fd fd, const void *buf, unsigned int n)
 {
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
@@ -174,50 +175,6 @@ int LibDevice::write(t_device_fd fd, const void *buf, unsigned int n)
     itPtr++;
   }
   return ret;
-}
-
-LibDevice::~LibDevice()
-{
-  for (unsigned idx = 0; idx < deviceDescr.size(); idx++)
-  {
-    if (deviceDescr[idx]->device != NULL)
-    {
-      fprintf(stderr, "Warning: device %s is not closed!\n", deviceDescr[idx]->device->getName());
-    }
-  }
-}
-
-int LibDeviceRegisterWriteCallback(t_device_fd fd, t_BusWriteCbFunc *cbFuncPtr, void *dataPtr)
-{
-  t_BusWriteCallBack *cbPtr = (t_BusWriteCallBack *)malloc(sizeof(t_BusWriteCallBack));
-  cbPtr->cbFunc = cbFuncPtr;
-  cbPtr->dataPtr = dataPtr;
-  return device_ioctl(fd, e_DeviceBaseSetWriteCallback, cbPtr);
-}
-
-extern "C" t_device_fd device_open(const char *device, int flags)
-{
-  return LibDevice::open(device, flags);
-}
-
-extern "C" int device_close(t_device_fd fd)
-{
-  return LibDevice::close(fd);
-}
-
-extern "C" int device_ioctl(t_device_fd fd, unsigned long int request, void *data)
-{
-  return LibDevice::ioctl(fd, request, data);
-}
-
-extern "C" int device_read(t_device_fd fd, void *buf, unsigned int n)
-{
-  return LibDevice::read(fd, buf, n);
-}
-
-extern "C" int device_write(t_device_fd fd, const void *buf, unsigned int n)
-{
-  return LibDevice::write(fd, buf, n);
 }
 
 #if 0
