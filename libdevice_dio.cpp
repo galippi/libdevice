@@ -45,6 +45,7 @@ public:
         bus[fd]->connectionCtr--;
       }else
       { /* last connection -> free up the bus */
+        busList.erase(bus[fd]->name);
         delete bus[fd];
         bus[fd] = NULL;
         fdHandler.ReleaseFd(fd);
