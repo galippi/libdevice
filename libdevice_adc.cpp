@@ -15,39 +15,38 @@ public:
   virtual const char *getName(void){return "adc";}
   t_device_fd open(const char *name, int flags)
   {
-    auto devItPtr = busListAdc.find(name);
-    if (devItPtr != busListAdc.end())
+    auto devItPtr = busList.find(name);
+    if (devItPtr != busList.end())
     {
-      devItPtr->second->connectionCtr++;
-      return devItPtr->second->fd;
+      return devItPtr->second->open();
     }
     t_device_fd fd = fdHandler.GetNextFreeFd();
     if (fd >= 0)
     {
       DeviceBusDouble *busPtr = new DeviceBusDouble(name, fd);
-      busListAdc[name] = busPtr;
-      if ((unsigned)fd >= busAdc.size())
+      busList[name] = busPtr;
+      if ((unsigned)fd >= bus.size())
       {
-        busAdc.push_back(busPtr);
+        bus.push_back(busPtr);
       }else
       {
-        busAdc[fd] = busPtr;
+        bus[fd] = busPtr;
       }
     }
     return fd;
   }
   virtual int close(t_device_fd fd)
   {
-    if (busAdc[fd] != NULL)
+    auto busPtr = bus[fd];
+    if (busPtr != NULL)
     {
-      if (busAdc[fd]->connectionCtr != 1)
-      { /* other connection remains -> release this connection, but keep the bus */
-        busAdc[fd]->connectionCtr--;
+      if (busPtr->close() != 0)
+      { /* other connection remains -> keep the bus  (nothing to do) */
       }else
       { /* last connection -> free up the bus */
-        busListAdc.erase(busAdc[fd]->name);
-        delete busAdc[fd];
-        busAdc[fd] = NULL;
+        busList.erase(busPtr->getName());
+        delete busPtr;
+        bus[fd] = NULL;
         fdHandler.ReleaseFd(fd);
       }
       return 0;
@@ -59,9 +58,9 @@ public:
   virtual int read(t_device_fd fd, void *buf, unsigned int n)
   {
     if ((n == sizeof(double)) &&
-        (busAdc[fd] != NULL))
+        (bus[fd] != NULL))
     {
-      double val = busAdc[fd]->val;
+      double val = bus[fd]->val;
       memcpy(buf, &val, n);
       return sizeof(val);
     }else
@@ -72,11 +71,11 @@ public:
   virtual int write(t_device_fd fd, const void *buf, unsigned int n)
   {
     if ((n == sizeof(double)) &&
-        (busAdc[fd] != NULL))
+        (bus[fd] != NULL))
     {
       double val;
       memcpy(&val, buf, sizeof(val));
-      busAdc[fd]->val = val;
+      bus[fd]->val = val;
       return sizeof(val);
     }else
     {
@@ -85,8 +84,8 @@ public:
   }
 
 protected:
-  std::map <std::string, DeviceBusDouble*> busListAdc;
-  std::vector <DeviceBusDouble*> busAdc;
+  std::map <std::string, DeviceBusDouble*> busList;
+  std::vector <DeviceBusDouble*> bus;
   DeviceFd fdHandler;
 };
 
@@ -99,11 +98,11 @@ void registerAdcDevice(void)
 
 LibDeviceAdc::~LibDeviceAdc()
 { /* debug info: check that all bus is closed */
-  for (size_t i = 0; i < busAdc.size(); i++)
+  for (size_t i = 0; i < bus.size(); i++)
   {
-    if (busAdc[i] != NULL)
+    if (bus[i] != NULL)
     { /* bus is not freed up */
-      fprintf(stderr, "Warning: LibDeviceAdc::~LibDeviceAdc - not freed up bus %s!\n", busAdc[i]->name.c_str());
+      fprintf(stderr, "Warning: LibDeviceAdc::~LibDeviceAdc - not freed up bus %s!\n", bus[i]->getName().c_str());
     }
   }
 }

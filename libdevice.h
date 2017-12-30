@@ -84,9 +84,22 @@ public:
     this->fd = fd;
     connectionCtr = 1;
   }
+  int open()
+  {
+    connectionCtr++;
+    return fd;
+  }
+  int close()
+  {
+    assert(connectionCtr > 0);
+    connectionCtr--;
+    return connectionCtr;
+  }
+  const std::string getName() const {return name;}
+protected:
   int fd;
-  int connectionCtr;
   std::string name;
+  int connectionCtr;
 };
 
 class DeviceBusDouble : public DeviceBusBase

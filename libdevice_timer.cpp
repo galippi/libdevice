@@ -27,8 +27,7 @@ public:
     auto devItPtr = busList.find(name);
     if (devItPtr != busList.end())
     {
-      devItPtr->second->connectionCtr++;
-      return devItPtr->second->fd;
+      return devItPtr->second->open();
     }
     t_device_fd fd = fdHandler.GetNextFreeFd();
     if (fd >= 0)
@@ -49,12 +48,11 @@ public:
   {
     if (bus[fd] != NULL)
     {
-      if (bus[fd]->connectionCtr != 1)
+      if (bus[fd]->close() != 0)
       { /* other connection remains -> release this connection, but keep the bus */
-        bus[fd]->connectionCtr--;
       }else
       { /* last connection -> free up the bus */
-        busList.erase(bus[fd]->name);
+        busList.erase(bus[fd]->getName());
         delete bus[fd];
         bus[fd] = NULL;
         fdHandler.ReleaseFd(fd);
@@ -142,7 +140,7 @@ LibDeviceTimer::~LibDeviceTimer()
   {
     if (bus[i] != NULL)
     { /* bus is not freed up */
-      fprintf(stderr, "Warning: LibDeviceTimer::~LibDeviceTimer - not freed up bus %s!\n", bus[i]->name.c_str());
+      fprintf(stderr, "Warning: LibDeviceTimer::~LibDeviceTimer - not freed up bus %s!\n", bus[i]->getName().c_str());
     }
   }
 }
