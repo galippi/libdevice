@@ -69,11 +69,13 @@ int main(int argc, const char **argv)
   (void)device_dio_write_char(fd_pcv, 0);
   assert(device_dio_read_char(fd4) == 1);
   assert(device_dio_read_char(fd_pcv) == 0);
-  device_close(fd1);
-  device_close(fd11);
-  device_close(fd2);
-  device_close(fd3);
-  device_close(fd4);
-  device_close(fd_pcv);
+  assert(device_close(fd1) == 0);
+  assert(device_close(fd11) == 0);
+  assert(device_close(fd2) == 0);
+  assert(device_close(fd3) == 0);
+  assert(device_close(fd4) == 0);
+  assert(device_close(fd_pcv) == 0);
+  assert((fd1 = device_open("/dev/adc/Ub", 0)) >= 0);
+  assert(device_close(fd1) == 0);
   return 0;
 }
