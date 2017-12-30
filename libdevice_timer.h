@@ -34,7 +34,7 @@ typedef struct
 
 typedef enum
 {
-  e_DeviceTimerStep,
+  e_DeviceTimerStep = e_DeviceBaseLast,
   e_DeviceTimerSetTimer,
   e_DeviceTimerSetTimerDelta,
 }e_DeviceTimerIoctl;

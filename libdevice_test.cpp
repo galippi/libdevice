@@ -24,6 +24,11 @@ void it(t_TimerCallBack *data)
 #endif
 }
 
+void ubWriteCb(t_BusWriteCallBack * data)
+{
+  assert(fabs(device_adc_read_double(data->fdBus)-3.33) < 1e-9);
+}
+
 int main(int argc, const char **argv)
 {
   (void)argc;
@@ -47,6 +52,7 @@ int main(int argc, const char **argv)
   registerAdcDevice();
   registerDioDevice();
   t_device_fd fd1 = device_open("/dev/adc/Ub", 0);
+  (void)LibDeviceRegisterWriteCallback(fd1, ubWriteCb, NULL);
   (void)device_adc_write_double(fd1, 3.33);
   assert(fabs(device_adc_read_double(fd1)-3.33) < 1e-9);
   t_device_fd fd11 = device_open("/dev/adc/Uz", 0);

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <memory.h>
 
 #include "libdevice.h"
 
@@ -13,6 +14,7 @@ public:
   }
   t_device_fd fd;
   LibDeviceBase *device;
+  std::multimap <t_device_fd, t_BusWriteCallBack*> writeCallback;
 };
 
 /* create static instance which call be called externally */
@@ -104,7 +106,19 @@ int LibDevice::ioctl(t_device_fd fd, unsigned long int request, void *data)
 {
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
-  return dev->device->ioctl(dev->fd, request, data);
+  switch (request)
+  {
+    case e_DeviceBaseSetWriteCallback:
+    {
+      t_BusWriteCallBack *cbPtr = (t_BusWriteCallBack*)data;
+      cbPtr->fdBus = fd;
+      cbPtr->fdDevice = dev->fd;
+      dev->writeCallback.insert(std::pair<t_device_fd, t_BusWriteCallBack*>(fd, cbPtr));
+      return 0;
+    }
+    default:
+      return dev->device->ioctl(dev->fd, request, data);
+  }
 }
 
 int LibDevice::read(t_device_fd fd, void *buf, unsigned int n)
@@ -118,7 +132,15 @@ int LibDevice::write(t_device_fd fd, const void *buf, unsigned int n)
 {
   assert(deviceIsValid(fd));
   auto dev = deviceDescr[fd];
-  return dev->device->write(dev->fd, buf, n);
+  int ret = dev->device->write(dev->fd, buf, n);
+  auto itPtr = dev->writeCallback.find(fd);
+  while(itPtr != dev->writeCallback.end())
+  {
+    t_BusWriteCallBack *cbPtr = itPtr->second;
+    (*cbPtr->cbFunc)(cbPtr);
+    itPtr++;
+  }
+  return ret;
 }
 
 LibDevice::~LibDevice()
@@ -129,6 +151,14 @@ LibDevice::~LibDevice()
     fprintf(stderr, "Warning: device %s is not closed!\n", devDescrPtr->second->device->getName());
     devDescrPtr++;
   }
+}
+
+int LibDeviceRegisterWriteCallback(t_device_fd fd, t_BusWriteCbFunc *cbFuncPtr, void *dataPtr)
+{
+  t_BusWriteCallBack *cbPtr = (t_BusWriteCallBack *)malloc(sizeof(t_BusWriteCallBack));
+  cbPtr->cbFunc = cbFuncPtr;
+  cbPtr->dataPtr = dataPtr;
+  return device_ioctl(fd, e_DeviceBaseSetWriteCallback, cbPtr);
 }
 
 extern "C" t_device_fd device_open(const char *device, int flags)

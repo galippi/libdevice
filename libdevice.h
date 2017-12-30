@@ -53,6 +53,18 @@ public:
 #include <string>
 #include <map>
 
+typedef struct s_BusWriteCallBack t_BusWriteCallBack;
+
+typedef void (t_BusWriteCbFunc)(t_BusWriteCallBack *);
+
+struct s_BusWriteCallBack
+{
+  t_device_fd fdBus;
+  t_device_fd fdDevice;
+  void *dataPtr;
+  t_BusWriteCbFunc *cbFunc;
+};
+
 class LibDeviceDescr;
 
 class LibDevice
@@ -81,6 +93,14 @@ class LibDevice
     static std::map <int, LibDeviceDescr*> deviceDescr;
     static DeviceFd fdHandler;
 };
+
+typedef enum
+{
+  e_DeviceBaseSetWriteCallback,
+  e_DeviceBaseLast,
+}e_DeviceBaseIoctl;
+
+extern "C" int LibDeviceRegisterWriteCallback(t_device_fd fd, t_BusWriteCbFunc *cbFuncPtr, void *dataPtr);
 
 class DeviceBusBase
 {
