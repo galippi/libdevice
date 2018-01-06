@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <memory.h>
 
 #include "libdevice.h"
 #include "libdevice_timer.h"
@@ -39,33 +40,65 @@ static void CAN_Test(void)
   assert(fd_can2 >= 0);
   t_device_fd fd_can3 = device_open("/dev/can/sensor", 0);
   assert(fd_can3 >= 0);
+  t_LibDeviceCAN msg;
+
+  t_LibDeviceCAN msg0 = {0x1234, 8, {0, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can1, &msg0, sizeof(msg)) == sizeof(msg));
+  t_LibDeviceCAN  msg1 = {0x5678, 8, {0xaa, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can1, &msg1, sizeof(msg)) == sizeof(msg));
+  t_LibDeviceCAN msg2 = {0x8765, 8, {0xBB, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can2, &msg2, sizeof(msg)) == sizeof(msg));
+  t_LibDeviceCAN msg3 = {0x1357, 8, {0xcc, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can3, &msg3, sizeof(msg)) == sizeof(msg));
+
+  assert(device_read(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg0, sizeof(msg)) == 0);
+  assert(device_read(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg1, sizeof(msg)) == 0);
+  assert(device_read(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg2, sizeof(msg)) == 0);
+  assert(device_read(fd_can1, &msg, sizeof(msg)) ==  0);
+
+  assert(device_read(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg0, sizeof(msg)) == 0);
+  assert(device_read(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg1, sizeof(msg)) == 0);
+  assert(device_read(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg2, sizeof(msg)) == 0);
+  assert(device_read(fd_can2, &msg, sizeof(msg)) ==  0);
+
+  assert(device_read(fd_can3, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg3, sizeof(msg)) == 0);
+  t_LibDeviceCAN  msg4 = {0x5678, 8, {0xee, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can3, &msg4, sizeof(msg)) == sizeof(msg));
+  assert(device_read(fd_can3, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg4, sizeof(msg)) == 0);
+  assert(device_read(fd_can3, &msg, sizeof(msg)) ==  0);
+
   assert(device_close(fd_can1) == 0);
   assert(device_close(fd_can2) == 0);
   assert(device_close(fd_can3) == 0);
 }
 
-int main(int argc, const char **argv)
+static void Timer_Test(void)
 {
-  (void)argc;
-  (void)argv;
-  registerTimerDevice();
-  {
-    t_DeviceTimerSetTimer timer = {1500, it};
-    assert(device_ioctl(systemTimer, e_DeviceTimerSetTimer, (void*)&timer) == 0);
-    timer.timer = 300;
-    assert(device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer) == 0);
-    t_DeviceTimerStep timerStep = {1000};
-    assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
-    timer.timer = 125;
-    assert(device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer) == 0);
-    assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
-    assert(device_systimer_setCb(e_DeviceTimerSetTimer, 1700, it) < 0);
-    assert(device_systimer_setCb(e_DeviceTimerSetTimer, 2700, it) == 0);
-    assert(device_systimer_setCb(e_DeviceTimerSetTimerDelta, 222, it) == 0);
-    assert(device_systimer_step(1000) == 0);
-  }
-  registerAdcDevice();
-  registerDioDevice();
+  t_DeviceTimerSetTimer timer = {1500, it};
+  assert(device_ioctl(systemTimer, e_DeviceTimerSetTimer, (void*)&timer) == 0);
+  timer.timer = 300;
+  assert(device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer) == 0);
+  t_DeviceTimerStep timerStep = {1000};
+  assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
+  timer.timer = 125;
+  assert(device_ioctl(systemTimer, e_DeviceTimerSetTimerDelta, (void*)&timer) == 0);
+  assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
+  assert(device_systimer_setCb(e_DeviceTimerSetTimer, 1700, it) < 0);
+  assert(device_systimer_setCb(e_DeviceTimerSetTimer, 2700, it) == 0);
+  assert(device_systimer_setCb(e_DeviceTimerSetTimerDelta, 222, it) == 0);
+  assert(device_systimer_step(1000) == 0);
+}
+
+static void ADC_DIO_Test()
+{
   t_device_fd fd1 = device_open("/dev/adc/Ub", 0);
   assert(fd1 >= 0);
   assert(LibDeviceRegisterWriteCallback(fd1, ubWriteCb, NULL) == 0);
@@ -98,6 +131,17 @@ int main(int argc, const char **argv)
   assert(device_close(fd_pcv) == 0);
   assert((fd1 = device_open("/dev/adc/Ub", 0)) >= 0);
   assert(device_close(fd1) == 0);
+}
+
+int main(int argc, const char **argv)
+{
+  (void)argc;
+  (void)argv;
+  registerTimerDevice();
+  Timer_Test();
+  registerAdcDevice();
+  registerDioDevice();
+  ADC_DIO_Test();
   CAN_Test();
   return 0;
 }
