@@ -7,6 +7,7 @@ CC       = gcc
 LL       = gcc
 CFLAGS   = $(CFLAGS_OPTIM) -Wall $(CFLAGS_DEBUG) $(CFLAGS_NO_CYGWIN_DLL)
 #CFLAGS  += -I/usr/include/SDL
+CFLAGS  += -Ivcan/src -Ivcan/include -Ivcan/include/linux
 CPPFLAGS   = $(CFLAGS) -fno-rtti
 CPPFLAGS += -std=c++11
 
@@ -37,11 +38,14 @@ CPPFILES+= libdevice_adc.cpp
 CPPFILES+= libdevice_dio.cpp
 CPPFILES+= libdevice_timer.cpp
 CPPFILES+= libdevice_can.cpp
+CPPFILES+= libdevice_vcan.cpp
 #CPPFILES+= debug.cpp
 #CPPFILES+= osm_xml.cpp
 #CFILES    = $(TARGET).c
 #CFILES   = c_file.c
 #CFILES  += SDL_WM_mini.c
+VPATH += vcan/src
+CFILES += vcan.c
 
 OBJECTS = $(addprefix $(TARGET_DIR)/,$(CPPFILES:.cpp=.o) $(CFILES:.c=.o))
 DEPFILES = $(addprefix $(TARGET_DIR)/,$(CPPFILES:.cpp=.d) $(CFILES:.c=.d))

@@ -7,6 +7,7 @@
 #include "libdevice_adc.h"
 #include "libdevice_dio.h"
 #include "libdevice_can.h"
+#include "libdevice_vcan.h"
 
 void it(t_TimerCallBack *data)
 {
@@ -80,6 +81,47 @@ static void CAN_Test(void)
   assert(device_close(fd_can3) == 0);
 }
 
+static void vCAN_Test(void)
+{
+  registerVCANDevice();
+  t_device_fd fd_can1 = device_open("/dev/vcan/J1939", 0);
+  assert(fd_can1 >= 0);
+  t_device_fd fd_can2 = device_open("/dev/vcan/J1939", 0);
+  assert(fd_can2 >= 0);
+  t_device_fd fd_can3 = device_open("/dev/vcan/sensor", 0);
+  assert(fd_can3 >= 0);
+  typedef struct can_frame t_LibDevicevCAN;
+  t_LibDevicevCAN msg;
+
+  t_LibDevicevCAN msg0 = {0x1234, 8, {0, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can1, &msg0, sizeof(msg)) == sizeof(msg));
+  t_LibDevicevCAN  msg1 = {0x5678, 8, {0xaa, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can1, &msg1, sizeof(msg)) == sizeof(msg));
+  t_LibDevicevCAN msg2 = {0x8765, 8, {0xBB, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can2, &msg2, sizeof(msg)) == sizeof(msg));
+  t_LibDevicevCAN msg3 = {0x1357, 8, {0xcc, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can3, &msg3, sizeof(msg)) == sizeof(msg));
+
+  assert(device_read(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg2, sizeof(msg)) == 0);
+  assert(device_read(fd_can1, &msg, sizeof(msg)) ==  -1);
+
+  assert(device_read(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg0, sizeof(msg)) == 0);
+  assert(device_read(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(memcmp(&msg, &msg1, sizeof(msg)) == 0);
+  assert(device_read(fd_can2, &msg, sizeof(msg)) ==  -1);
+
+  assert(device_read(fd_can3, &msg, sizeof(msg)) == -1);
+  t_LibDevicevCAN  msg4 = {0x5678, 8, {0xee, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can3, &msg4, sizeof(msg)) == sizeof(msg));
+  assert(device_read(fd_can3, &msg, sizeof(msg)) ==  -1);
+
+  assert(device_close(fd_can1) == 0);
+  assert(device_close(fd_can2) == 0);
+  assert(device_close(fd_can3) == 0);
+}
+
 static void Timer_Test(void)
 {
   t_DeviceTimerSetTimer timer = {1500, it};
@@ -143,5 +185,6 @@ int main(int argc, const char **argv)
   registerDioDevice();
   ADC_DIO_Test();
   CAN_Test();
+  vCAN_Test();
   return 0;
 }
