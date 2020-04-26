@@ -34,12 +34,13 @@ void ubWriteCb(t_BusWriteCallBack * data)
 
 static void CAN_Test(void)
 {
-  registerCANDevice();
-  t_device_fd fd_can1 = device_open("/dev/can/J1939", 0);
+  registerCANDevice("base");
+  t_network_id net = network_open("base");
+  t_device_fd fd_can1 = device_open(net, "/dev/can/J1939", 0);
   assert(fd_can1 >= 0);
-  t_device_fd fd_can2 = device_open("/dev/can/J1939", 0);
+  t_device_fd fd_can2 = device_open(net, "/dev/can/J1939", 0);
   assert(fd_can2 >= 0);
-  t_device_fd fd_can3 = device_open("/dev/can/sensor", 0);
+  t_device_fd fd_can3 = device_open(net, "/dev/can/sensor", 0);
   assert(fd_can3 >= 0);
   t_LibDeviceCAN msg;
 
@@ -83,12 +84,13 @@ static void CAN_Test(void)
 
 static void vCAN_Test(void)
 {
-  registerVCANDevice();
-  t_device_fd fd_can1 = device_open("/dev/vcan/J1939", 0);
+  registerVCANDevice("base");
+  t_network_id net = network_open("base");
+  t_device_fd fd_can1 = device_open(net, "/dev/vcan/J1939", 0);
   assert(fd_can1 >= 0);
-  t_device_fd fd_can2 = device_open("/dev/vcan/J1939", 0);
+  t_device_fd fd_can2 = device_open(net, "/dev/vcan/J1939", 0);
   assert(fd_can2 >= 0);
-  t_device_fd fd_can3 = device_open("/dev/vcan/sensor", 0);
+  t_device_fd fd_can3 = device_open(net, "/dev/vcan/sensor", 0);
   assert(fd_can3 >= 0);
   typedef struct can_frame t_LibDevicevCAN;
   t_LibDevicevCAN msg;
@@ -141,26 +143,27 @@ static void Timer_Test(void)
 
 static void ADC_DIO_Test()
 {
-  t_device_fd fd1 = device_open("/dev/adc/Ub", 0);
+  t_network_id net = network_open("base");
+  t_device_fd fd1 = device_open(net, "/dev/adc/Ub", 0);
   assert(fd1 >= 0);
   assert(LibDeviceRegisterWriteCallback(fd1, ubWriteCb, NULL) == 0);
   assert(device_adc_write_double(fd1, 3.33) == sizeof(double));
   assert(fabs(device_adc_read_double(fd1)-3.33) < 1e-9);
-  t_device_fd fd11 = device_open("/dev/adc/Uz", 0);
+  t_device_fd fd11 = device_open(net, "/dev/adc/Uz", 0);
   assert(fd11 >= 0);
   assert(device_adc_write_double(fd11, 13.0) == sizeof(double));
-  t_device_fd fd2 = device_open("/dev/adc/Ub", 0);
+  t_device_fd fd2 = device_open(net, "/dev/adc/Ub", 0);
   assert(fd2 >= 0);
   assert(fabs(device_adc_read_double(fd2)-3.33) < 1e-9);
   assert(fabs(device_adc_read_double(fd11)-13.0) < 1e-9);
 
-  t_device_fd fd3 = device_open("/dev/dio/Ub", 0);
+  t_device_fd fd3 = device_open(net, "/dev/dio/Ub", 0);
   assert(fd3 >= 0);
   assert(device_dio_write_char(fd3, 1) == 1);
   assert(device_dio_read_char(fd3) == 1);
-  t_device_fd fd4 = device_open("/dev/dio/Ub", 0);
+  t_device_fd fd4 = device_open(net, "/dev/dio/Ub", 0);
   assert(fd4 >= 0);
-  t_device_fd fd_pcv = device_open("/dev/dio/pcv", 0);
+  t_device_fd fd_pcv = device_open(net, "/dev/dio/pcv", 0);
   assert(fd_pcv >= 0);
   assert(device_dio_write_char(fd_pcv, 0) == 1);
   assert(device_dio_read_char(fd4) == 1);
@@ -171,7 +174,38 @@ static void ADC_DIO_Test()
   assert(device_close(fd3) == 0);
   assert(device_close(fd4) == 0);
   assert(device_close(fd_pcv) == 0);
-  assert((fd1 = device_open("/dev/adc/Ub", 0)) >= 0);
+  assert((fd1 = device_open(net, "/dev/adc/Ub", 0)) >= 0);
+  assert(device_close(fd1) == 0);
+}
+
+static void networkList_test()
+{
+  LibDeviceNetworkList list;
+  LibDeviceNetwork *net0 = list.get("base");
+  assert(net0->getId() == 0);
+  LibDeviceNetwork *net1 = list.get("base");
+  assert(net0 == net1);
+  net1 = list.get("base2");
+  assert(net0 != net1);
+  assert(net1->getId() == 1);
+  LibDeviceNetwork *net2 = list.get("base");
+  assert(net0 == net2);
+}
+
+static void networkCrossTalk_test()
+{
+  t_network_id net0 = network_open("ECU0");
+  t_network_id net1 = network_open("ECU1");
+  t_device_fd fd0 = device_open(net0, "/dev/adc/Ub", 0);
+  assert(fd0 >= 0);
+  t_device_fd fd1 = device_open(net1, "/dev/adc/Ub", 0);
+  assert(fd1 >= 0);
+  assert(fd0 != fd1);
+  assert(device_adc_write_double(fd0, 3.33) == sizeof(double));
+  assert(device_adc_write_double(fd1, 5.55) == sizeof(double));
+  assert(fabs(device_adc_read_double(fd0)-3.33) < 1e-9);
+  assert(fabs(device_adc_read_double(fd1)-5.55) < 1e-9);
+  assert(device_close(fd0) == 0);
   assert(device_close(fd1) == 0);
 }
 
@@ -179,12 +213,14 @@ int main(int argc, const char **argv)
 {
   (void)argc;
   (void)argv;
-  registerTimerDevice();
+  networkList_test();
+  registerTimerDevice("base");
   Timer_Test();
-  registerAdcDevice();
-  registerDioDevice();
+  registerAdcDevice("base");
+  registerDioDevice("base");
   ADC_DIO_Test();
   CAN_Test();
   vCAN_Test();
+  networkCrossTalk_test();
   return 0;
 }

@@ -7,7 +7,7 @@
 class LibDevicevCAN : public LibDeviceBase
 {
 public:
-  LibDevicevCAN()
+  LibDevicevCAN(t_network_id netId) : LibDeviceBase(netId)
   {
 
   }
@@ -41,9 +41,8 @@ public:
   }
 };
 
-static LibDevicevCAN vCAN;
-
-void registerVCANDevice(void)
+void registerVCANDevice(const char *networkName)
 {
-  LibDeviceRegisterDevice(&vCAN);
+  LibDevicevCAN *vCAN = new LibDevicevCAN(network_open(networkName));
+  LibDeviceRegisterDevice(vCAN);
 }

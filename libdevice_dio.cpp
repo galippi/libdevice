@@ -10,7 +10,7 @@
 class LibDeviceDio : public LibDeviceBaseHandler
 {
 public:
-  LibDeviceDio(){}
+  LibDeviceDio(t_network_id netId) : LibDeviceBaseHandler(netId){}
   ~LibDeviceDio();
   virtual const char *getName(void){return "dio";}
   DeviceBusBase *createBus(const char *name, t_device_fd fd)
@@ -48,11 +48,11 @@ public:
   }
 };
 
-static LibDeviceDio dio;
-
-void registerDioDevice(void)
+void registerDioDevice(const char *networkName)
 {
-  LibDeviceRegisterDevice(&dio);
+  t_network_id netId = network_open(networkName);
+  LibDeviceDio *dio = new LibDeviceDio(netId);
+  LibDeviceRegisterDevice(dio);
 }
 
 LibDeviceDio::~LibDeviceDio()

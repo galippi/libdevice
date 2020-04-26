@@ -13,7 +13,7 @@ extern int device_timer_ioctl(int fd, unsigned long int request, void *data);
 extern int device_timer_read(int fd, void *buf, unsigned int n);
 extern int device_timer_write(int fd, const void *buf, unsigned int n);
 
-void registerTimerDevice(void);
+void registerTimerDevice(const char *networkName);
 
 typedef struct s_TimerCallBack t_TimerCallBack;
 

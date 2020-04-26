@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-void registerCANDevice(void);
+void registerCANDevice(const char *networkName);
 
 typedef struct
 {

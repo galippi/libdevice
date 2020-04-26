@@ -10,7 +10,8 @@
 class LibDeviceAdc : public LibDeviceBaseHandler
 {
 public:
-  LibDeviceAdc(){}
+  LibDeviceAdc(LibDeviceNetwork *network) : LibDeviceBaseHandler(network){}
+  LibDeviceAdc(t_network_id netId) : LibDeviceBaseHandler(netId){}
   ~LibDeviceAdc();
   virtual const char *getName(void){return "adc";}
   DeviceBusBase *createBus(const char *name, t_device_fd fd)
@@ -49,11 +50,10 @@ public:
   }
 };
 
-static LibDeviceAdc adc;
-
-void registerAdcDevice(void)
+void registerAdcDevice(const char *networkName)
 {
-  LibDeviceRegisterDevice(&adc);
+	LibDeviceAdc *adc = new LibDeviceAdc(network_open(networkName));
+	LibDeviceRegisterDevice(adc);
 }
 
 LibDeviceAdc::~LibDeviceAdc()

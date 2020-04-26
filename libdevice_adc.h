@@ -14,7 +14,7 @@ extern int device_adc_write(int fd, const void *buf, unsigned int n);
 extern int device_adc_write_double(int fd, double val);
 extern double device_adc_read_double(int fd);
 
-void registerAdcDevice(void);
+void registerAdcDevice(const char *networkName);
 
 #ifdef __cplusplus
 }

@@ -19,7 +19,7 @@ public:
 class LibDeviceTimer : public LibDeviceBaseHandler
 {
 public:
-  LibDeviceTimer(){}
+  LibDeviceTimer(t_network_id netId) : LibDeviceBaseHandler(netId){}
   ~LibDeviceTimer();
   virtual const char *getName(void){return "timer";}
   DeviceBusBase *createBus(const char *name, t_device_fd fd)
@@ -84,13 +84,17 @@ public:
   }
 };
 
-static LibDeviceTimer timer;
-
 t_device_fd systemTimer = -1;
-void registerTimerDevice(void)
+void registerTimerDevice(const char *networkName)
 {
-  LibDeviceRegisterDevice(&timer);
-  systemTimer = device_open("/dev/timer/system", 0);
+  t_network_id netId = network_open(networkName);
+  LibDeviceTimer *timer = new LibDeviceTimer(netId);
+  LibDeviceRegisterDevice(timer);
+  if (systemTimer < 0)
+  {
+    t_network_id netIdWorld = network_open("World");
+    systemTimer = device_open(netIdWorld, "/dev/timer/system", 0);
+  }
 }
 
 LibDeviceTimer::~LibDeviceTimer()

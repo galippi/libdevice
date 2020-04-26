@@ -78,7 +78,7 @@ public:
 class LibDeviceCAN : public LibDeviceBaseHandler
 {
 public:
-  LibDeviceCAN(){}
+  LibDeviceCAN(t_network_id netId) : LibDeviceBaseHandler(netId){}
   ~LibDeviceCAN();
   virtual const char *getName(void){return "can";}
   DeviceBusBase *createBus(const char *name, t_device_fd fd)
@@ -182,11 +182,10 @@ public:
   }
 };
 
-static LibDeviceCAN CAN;
-
-void registerCANDevice(void)
+void registerCANDevice(const char *networkName)
 {
-  LibDeviceRegisterDevice(&CAN);
+  LibDeviceCAN *CAN = new LibDeviceCAN(network_open(networkName));
+  LibDeviceRegisterDevice(CAN);
 }
 
 LibDeviceCAN::~LibDeviceCAN()

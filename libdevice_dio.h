@@ -11,7 +11,7 @@ extern int device_dio_ioctl(int fd, unsigned long int request, void *data);
 extern int device_dio_read(int fd, void *buf, unsigned int n);
 extern int device_dio_write(int fd, const void *buf, unsigned int n);
 
-void registerDioDevice(void);
+void registerDioDevice(const char *networkNam);
 
 int  device_dio_write_char(int fd, char val);
 char device_dio_read_char(int fd);

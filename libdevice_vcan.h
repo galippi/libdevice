@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-void registerVCANDevice(void);
+void registerVCANDevice(const char *netName);
 
 #ifdef __cplusplus
 }

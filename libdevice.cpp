@@ -4,6 +4,35 @@
 
 #include "libdevice.h"
 
+LibDeviceNetwork::LibDeviceNetwork(const char *name, t_network_id id)
+{
+  this->name = name;
+  this->id = id;
+}
+
+static LibDeviceNetworkList networkList;
+
+LibDeviceNetwork *LibDeviceNetworkList::get(const char *networkName)
+{
+  auto netItPtr = networkMap.find(networkName);
+  if (netItPtr != networkMap.end())
+  {
+    return netItPtr->second;
+  }else
+  {
+    t_network_id id = networkList.size();
+    LibDeviceNetwork *net = new LibDeviceNetwork(networkName, id);
+    networkMap[networkName] = net;
+    networkList.push_back(net);
+    return net;
+  }
+}
+
+LibDeviceNetwork *LibDeviceNetworkList::get(t_network_id netId)
+{
+  return networkList[netId];
+}
+
 class LibDeviceDescr
 {
 public:
@@ -32,6 +61,11 @@ static std::map <std::string, LibDeviceBase*> deviceList;
 static std::vector <LibDeviceDescr*> deviceDescr;
 static DeviceFd fdHandler;
 static LibDevice libDevice;
+
+LibDeviceBase::LibDeviceBase(t_network_id netId)
+{
+  this->network = networkList.get(netId);
+}
 
 LibDeviceBase::~LibDeviceBase()
 { /* debug info: check that all bus is closed */
@@ -89,9 +123,15 @@ int LibDeviceRegisterWriteCallback(t_device_fd fd, t_BusWriteCbFunc *cbFuncPtr, 
   return device_ioctl(fd, e_DeviceBaseSetWriteCallback, cbPtr);
 }
 
-extern "C" t_device_fd device_open(const char *device, int flags)
+extern "C" t_network_id network_open(const char *networkName)
+{
+  return networkList.get(networkName)->getId();
+}
+
+extern "C" t_device_fd device_open(t_network_id netId, const char *device, int flags)
 {
   std::string name = device;
+  name = name + "/" + networkList.get(netId)->getName();
   if (name.find("/dev/") == 0)
   { /* valid device prefix */
     std::string devName = name.substr(5);
@@ -215,6 +255,12 @@ void DeviceFd::ReleaseFd(t_device_fd fd)
   { /* invalid descriptor -> error case */
     assert(0);
   }
+}
+
+LibDeviceBaseHandler::LibDeviceBaseHandler(t_network_id netId) :
+  LibDeviceBase(networkList.get(netId))
+{
+  nextFree = 0;
 }
 
 t_device_fd LibDeviceBaseHandler::open(const char *name, int flags)
