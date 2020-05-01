@@ -30,7 +30,8 @@ LDLIBS += -lstdc++
 MAKEFILE=Makefile
 ##################################################################
 TARGET=libdevice_test
-TARGET_DIR=.
+TARGET_DIR=bin
+DUMMY_DIR_FILE = $(TARGET_DIR)/dummy
 
 CPPFILES = $(TARGET).cpp
 CPPFILES+= libdevice.cpp
@@ -60,18 +61,22 @@ $(TARGET_EXE) : $(OBJECTS)
 	$(LL) $^ $(LDFLAGS) $(LDLIBS) -o $@
 
 #%.o: %.c $(MAKEFILE)
-$(TARGET_DIR)/%.o: %.c
+$(TARGET_DIR)/%.o: %.c $(DUMMY_DIR_FILE)
 	@echo Building $@
 	$(CC) $(CFLAGS) -c -o $@ $<
 	-@rm -f $(@:.o=.d)
 	$(CC) -M $(CFLAGS) -c -o $(@:.o=.d) $<
 
 #%.o: %.cpp $(MAKEFILE)
-$(TARGET_DIR)/%.o: %.cpp
+$(TARGET_DIR)/%.o: %.cpp $(DUMMY_DIR_FILE)
 	@echo Building $@
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 	-@rm -f $(@:.o=.d)
 	$(CC) -M $(CPPFLAGS) -c -o $(@:.o=.d) $<
+
+$(DUMMY_DIR_FILE):
+	-mkdir $(TARGET_DIR)
+	echo Dummy file >$@
 
 ##################################################################
 # cleaning rule

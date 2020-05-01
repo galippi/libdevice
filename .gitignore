@@ -2,3 +2,4 @@
 *.o
 *.exe
 libdevice_test.exe.stackdump
+bin/*
