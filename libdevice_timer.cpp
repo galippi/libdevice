@@ -28,6 +28,12 @@ public:
   }
   virtual int read(t_device_fd fd, void *buf, unsigned int n)
   {
+    DeviceBusTimer *dev = (DeviceBusTimer *)bus[fd];
+    if (n == sizeof(dev->val))
+    {
+      memcpy(buf, &(dev->val), n);
+      return n;
+    }
     return -1;
   }
   virtual int write(t_device_fd fd, const void *buf, unsigned int n)
