@@ -14,6 +14,18 @@ typedef struct
   uint8_t  data[8];
 }t_LibDeviceCAN;
 
+typedef enum
+{
+  e_DeviceCanStep = e_DeviceBaseLast,
+  e_DeviceCanSetWriteCb,
+}e_DeviceCanIoctl;
+
+typedef struct
+{
+  void (*deviceCanWriteCbFunc)(t_device_fd fd, void *data);
+  void *data;
+}t_DeviceCanWriteCbData;
+
 void device_can_send(t_device_fd fd, t_LibDeviceCAN msg);
 
 #ifdef __cplusplus

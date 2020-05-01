@@ -10,12 +10,14 @@
 class DeviceBusCANConnection
 {
 public:
-  DeviceBusCANConnection(unsigned size = 20)
+  DeviceBusCANConnection(t_device_fd fd, unsigned size = 20)
   {
     inIdx = 0;
     outIdx = 0;
     this->size = size;
     Msgs = (t_LibDeviceCAN*)malloc(this->size * sizeof(t_LibDeviceCAN));
+    writeCallbackData = NULL;
+    this->fd = fd;
   }
   ~DeviceBusCANConnection()
   {
@@ -61,9 +63,11 @@ public:
   void overflow()
   { /* overflow handler */
   }
+  t_device_fd fd;
   t_LibDeviceCAN *Msgs;
   unsigned inIdx, outIdx;
   unsigned size;
+  t_DeviceCanWriteCbData *writeCallbackData;
 };
 
 class DeviceBusCAN : public DeviceBusBase
@@ -102,30 +106,15 @@ public:
       busPtr = new DeviceBusCAN(name, fd);
       busList[name] = busPtr;
     }
-    busPtr->connectionList.insert(std::pair<t_device_fd,DeviceBusCANConnection*>(fd, new DeviceBusCANConnection()));
-    if ((unsigned)fd >= bus.size())
-    {
-      bus.push_back(busPtr);
-    }else
-    {
-      bus[fd] = busPtr;
-    }
+    busPtr->connectionList.insert(std::pair<t_device_fd,DeviceBusCANConnection*>(fd, new DeviceBusCANConnection(fd)));
+    bus[fd] = busPtr;
     return fd;
   }
   int close(t_device_fd fd)
   {
-    if ((fd < 0) || (fd > (int)bus.size()))
-    {
-      return -1;
-    }
     DeviceBusCAN *busPtr = (DeviceBusCAN*)bus[fd];
-    bus[fd] = NULL;
-    int idx = bus.size() - 1;
-    while((idx >= 0) && (bus[idx] == NULL))
-    {
-      bus.pop_back();
-      idx--;
-    }
+    assert(busPtr != NULL);
+    bus[fd] = NULL;;
     auto it = busPtr->connectionList.find(fd);
     if (it == busPtr->connectionList.end())
     {
@@ -133,7 +122,10 @@ public:
     }
     busPtr->connectionList.erase(it);
     if (busPtr->connectionList.size() == 0)
+    {
+      busList.erase(busPtr->getName());
       delete busPtr;
+    }
     return 0;
   }
   virtual int read(t_device_fd fd, void *buf, unsigned int n)
@@ -172,13 +164,28 @@ public:
     {
       if (it->second->put(msg) != 0)
         res = -1;
+      else
+        if (it->second->writeCallbackData != NULL)
+          it->second->writeCallbackData->deviceCanWriteCbFunc(it->second->fd, it->second->writeCallbackData->data);
       it++;
     }
     return res;
   }
   int ioctl(t_device_fd fd, unsigned long int request, void *data)
   {
-    return -1;
+    if (request == e_DeviceCanSetWriteCb)
+    {
+        DeviceBusCAN *busPtr = (DeviceBusCAN*)bus[fd];
+        assert(busPtr != NULL);
+        auto it = busPtr->connectionList.find(fd);
+        assert(it != busPtr->connectionList.end());
+        it->second->writeCallbackData = (t_DeviceCanWriteCbData*)data;
+        return 0;
+    }else
+    {
+      assert(0); /* not implemented request */
+      return -1;
+    }
   }
 };
 
