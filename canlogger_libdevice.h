@@ -6,9 +6,26 @@
 #include "libdevice.h"
 #include "libdevice_can.h"
 
-#define CANLOGGER_DEVICES_MAX 20
+class CanLogger;
 
-class CanLoggerCbData;
+class CanLoggerCbData
+{
+  public:
+    CanLoggerCbData(t_device_fd fd, int devIdx, CanLogger *logger, t_DeviceCanWriteCbData *cbData)
+    {
+      this->fd = fd;
+      this->devIdx = devIdx;
+      this->logger = logger;
+      this->cbData = cbData;
+    }
+    void callBack(t_LibDeviceCAN msg);
+    t_device_fd fd;
+    int devIdx;
+    CanLogger *logger;
+    t_DeviceCanWriteCbData *cbData;
+};
+
+#define CANLOGGER_DEVICES_MAX 20
 
 class CanLogger
 {
@@ -19,7 +36,7 @@ class CanLogger
     void canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg);
   private:
     FILE *fout;
-    t_device_fd devices[CANLOGGER_DEVICES_MAX];
+    CanLoggerCbData *devices[CANLOGGER_DEVICES_MAX];
     int nextDevIdx;
 };
 

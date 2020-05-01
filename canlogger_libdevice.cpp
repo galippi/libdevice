@@ -1,19 +1,5 @@
 #include "canlogger_libdevice.h"
 
-class CanLoggerCbData
-{
-  public:
-    CanLoggerCbData(t_device_fd fd, int devIdx, CanLogger *logger)
-    {
-      this->fd = fd;
-      this->devIdx = devIdx;
-      this->logger = logger;
-    }
-    t_device_fd fd;
-    int devIdx;
-    CanLogger *logger;
-};
-
 static void canWriteCbFunc(t_device_fd fd, void *data)
 {
   t_LibDeviceCAN msg;
@@ -39,7 +25,11 @@ CanLogger::~CanLogger()
   if (fout != NULL)
     fclose(fout);
   for (int idx = 0; idx < nextDevIdx; idx++)
-    device_close(devices[idx]);
+  {
+    device_close(devices[idx]->fd);
+    free(devices[idx]->cbData);
+    delete devices[idx];
+  }
 }
 
 void CanLogger::canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg)
@@ -50,11 +40,11 @@ void CanLogger::canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg)
 
 void CanLogger::addBus(t_network_id net, const char *busname)
 {
-  int devIdx = nextDevIdx++;
-  devices[devIdx] = device_open(net, busname, 0);
-  assert(devices[devIdx] >= 0);
   t_DeviceCanWriteCbData *cbData = (t_DeviceCanWriteCbData*)malloc(sizeof(t_DeviceCanWriteCbData));
+  int devIdx = nextDevIdx++;
+  devices[devIdx] = new CanLoggerCbData(device_open(net, busname, 0), devIdx, this, cbData);
+  assert(devices[devIdx] != NULL);
   cbData->deviceCanWriteCbFunc = canWriteCbFunc;
-  cbData->data = new CanLoggerCbData(devices[devIdx], devIdx, this);
-  device_ioctl(devices[devIdx], e_DeviceCanSetWriteCb, (void*)cbData);
+  cbData->data = this;
+  device_ioctl(devices[devIdx]->fd, e_DeviceCanSetWriteCb, (void*)cbData);
 }
