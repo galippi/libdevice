@@ -80,7 +80,6 @@ class LibDeviceBaseHandler : public LibDeviceBase
   public:
     LibDeviceBaseHandler(LibDeviceNetwork *network) : LibDeviceBase(network)
     {
-      nextFree = 0;
     }
     LibDeviceBaseHandler(t_network_id netId);
     virtual DeviceBusBase *createBus(const char *name, t_device_fd fd) = 0;
@@ -91,7 +90,6 @@ class LibDeviceBaseHandler : public LibDeviceBase
     t_device_fd GetNextFreeFd(void);
     void ReleaseFd(t_device_fd);
 protected:
-    t_device_fd nextFree;
     std::vector <t_device_fd> freeFdList;
 };
 

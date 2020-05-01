@@ -260,7 +260,6 @@ void DeviceFd::ReleaseFd(t_device_fd fd)
 LibDeviceBaseHandler::LibDeviceBaseHandler(t_network_id netId) :
   LibDeviceBase(networkList.get(netId))
 {
-  nextFree = 0;
 }
 
 t_device_fd LibDeviceBaseHandler::open(const char *name, int flags)
@@ -317,21 +316,15 @@ t_device_fd LibDeviceBaseHandler::GetNextFreeFd(void)
     return fd;
   }else
   {
-    if (nextFree < 0x7fffffff)
-    {
-      t_device_fd fd = nextFree;
-      nextFree++;
-      return fd;
-    }else
-    { /* too many device -> error */
-      return -1;
-    }
+    t_device_fd fd = bus.size();
+    bus.push_back(NULL);
+    return fd;
   }
 }
 
 void LibDeviceBaseHandler::ReleaseFd(t_device_fd fd)
 {
-  if ((fd >= 0) && (fd < nextFree))
+  if ((fd >= 0) && (fd < (int)bus.size()))
   {
     freeFdList.push_back(fd);
   }else
