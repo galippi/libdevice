@@ -26,18 +26,20 @@ static void canWriteCbFunc(t_device_fd fd, void *data)
 
 CanLogger::CanLogger(const char *filename)
 {
+  nextDevIdx = 0;
   fout = fopen(filename, "wt");
   if (fout == NULL)
   {
     throw 1;
   }
-  nextDevIdx = 0;
 }
 
 CanLogger::~CanLogger()
 {
   if (fout != NULL)
     fclose(fout);
+  for (int idx = 0; idx < nextDevIdx; idx++)
+    device_close(devices[idx]);
 }
 
 void CanLogger::canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg)
