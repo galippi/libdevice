@@ -8,6 +8,7 @@
 #include "libdevice_dio.h"
 #include "libdevice_can.h"
 #include "libdevice_vcan.h"
+#include "canlogger_libdevice.h"
 
 void it(t_TimerCallBack *data)
 {
@@ -34,10 +35,14 @@ void ubWriteCb(t_BusWriteCallBack * data)
 
 static void CAN_Test(void)
 {
-  registerCANDevice("base");
+  printf("Executing CAN_Test\n");
   t_network_id net = network_open("base");
+  t_device_fd fd_can1c = device_open(net, "/dev/can/J1939", 0);
+  assert(fd_can1c >= 0);
+  assert(device_close(fd_can1c) == 0);
   t_device_fd fd_can1 = device_open(net, "/dev/can/J1939", 0);
   assert(fd_can1 >= 0);
+  assert(fd_can1 == fd_can1c); /* reopening channel shall be the same id */
   t_device_fd fd_can2 = device_open(net, "/dev/can/J1939", 0);
   assert(fd_can2 >= 0);
   t_device_fd fd_can3 = device_open(net, "/dev/can/sensor", 0);
@@ -84,7 +89,7 @@ static void CAN_Test(void)
 
 static void vCAN_Test(void)
 {
-  registerVCANDevice("base");
+  printf("Executing vCAN_Test\n");
   t_network_id net = network_open("base");
   t_device_fd fd_can1 = device_open(net, "/dev/vcan/J1939", 0);
   assert(fd_can1 >= 0);
@@ -126,6 +131,7 @@ static void vCAN_Test(void)
 
 static void Timer_Test(void)
 {
+  printf("Executing Timer_Test\n");
   t_DeviceTimerSetTimer timer = {1500, it};
   assert(device_ioctl(systemTimer, e_DeviceTimerSetTimer, (void*)&timer) == 0);
   timer.timer = 300;
@@ -143,6 +149,7 @@ static void Timer_Test(void)
 
 static void ADC_DIO_Test()
 {
+  printf("Executing ADC_DIO_Test\n");
   t_network_id net = network_open("base");
   t_device_fd fd1 = device_open(net, "/dev/adc/Ub", 0);
   assert(fd1 >= 0);
@@ -180,6 +187,7 @@ static void ADC_DIO_Test()
 
 static void networkList_test()
 {
+  printf("Executing networkList_test\n");
   LibDeviceNetworkList list;
   LibDeviceNetwork *net0 = list.get("base");
   assert(net0->getId() == 0);
@@ -194,6 +202,7 @@ static void networkList_test()
 
 static void networkCrossTalk_test()
 {
+  printf("Executing networkCrossTalk_test\n");
   t_network_id net0 = network_open("ECU0");
   t_network_id net1 = network_open("ECU1");
   t_device_fd fd0 = device_open(net0, "/dev/adc/Ub", 0);
@@ -209,6 +218,27 @@ static void networkCrossTalk_test()
   assert(device_close(fd1) == 0);
 }
 
+static void canLogger_test()
+{
+  printf("Executing canLogger_test\n");
+  t_network_id net0 = network_open("base");
+  CanLogger logger("canlogger_test.asc");
+  const char *busname = "/dev/can/J1939";
+  logger.addBus(net0, busname);
+  t_device_fd fd_can1 = device_open(net0, busname, 0);
+  assert(fd_can1 >= 0);
+  t_device_fd fd_can2 = device_open(net0, busname, 0);
+  assert(fd_can2 >= 0);
+  t_LibDeviceCAN msg = {0x1234, 8, {0, 1, 2, 3, 4, 5, 6, 7}};
+  assert(device_write(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
+  msg.id = 0x80123456;
+  msg.dlc = 5;
+  msg.data[2] = 0x22;
+  assert(device_write(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(device_close(fd_can1) == 0);
+  assert(device_close(fd_can2) == 0);
+}
+
 int main(int argc, const char **argv)
 {
   (void)argc;
@@ -219,8 +249,11 @@ int main(int argc, const char **argv)
   registerAdcDevice("base");
   registerDioDevice("base");
   ADC_DIO_Test();
+  registerCANDevice("base");
   CAN_Test();
+  registerVCANDevice("base");
   vCAN_Test();
   networkCrossTalk_test();
+  canLogger_test();
   return 0;
 }
