@@ -1,4 +1,5 @@
 #include "canlogger_libdevice.h"
+#include "libdevice_timer.h"
 
 static void canWriteCbFunc(t_device_fd fd, void *data)
 {
@@ -37,7 +38,9 @@ void CanLogger::canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg)
 {
   if (fout != NULL)
   {
-    fprintf(fout, " 1.123456 %2d %c%08x %d", cbData->devIdx, (msg.id & 0x80000000) ? 'x' : ' ', msg.id, msg.dlc);
+    uint32_t t;
+    assert(device_read(systemTimer, &t, sizeof(t)) == sizeof(t));
+    fprintf(fout, "%4u.%06u %2d %c%08x %d", t/1000000, t % 1000000, cbData->devIdx, (msg.id & 0x80000000) ? 'x' : ' ', msg.id, msg.dlc);
     for (uint32_t i = 0; i < msg.dlc; i++)
         fprintf(fout, " %02x", msg.data[i]);
     fprintf(fout, "\n");

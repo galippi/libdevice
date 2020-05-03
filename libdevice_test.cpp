@@ -231,10 +231,13 @@ static void canLogger_test()
   assert(fd_can2 >= 0);
   t_LibDeviceCAN msg = {0x1234, 8, {0, 1, 2, 3, 4, 5, 6, 7}};
   assert(device_write(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
+  t_DeviceTimerStep timerStep = {200000};
+  assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
   msg.id = 0x80123456;
   msg.dlc = 5;
   msg.data[2] = 0x22;
   assert(device_write(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
   const char *busname1 = "/dev/can/sensor";
   logger.addBus(net0, busname1);
   t_device_fd fd_can3 = device_open(net0, busname1, 0);
@@ -243,6 +246,7 @@ static void canLogger_test()
   msg.dlc = 7;
   msg.data[1] = 0x11;
   assert(device_write(fd_can3, &msg, sizeof(msg)) == sizeof(msg));
+  assert(device_ioctl(systemTimer, e_DeviceTimerStep, (void*)&timerStep) == 0);
   assert(device_write(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
   assert(device_close(fd_can1) == 0);
   assert(device_close(fd_can2) == 0);
