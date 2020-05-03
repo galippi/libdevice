@@ -218,6 +218,60 @@ static void networkCrossTalk_test()
   assert(device_close(fd1) == 0);
 }
 
+static size_t fileSize(FILE *fin)
+{
+  fseek(fin, 0, SEEK_END);
+  size_t s = ftell(fin);
+  fseek(fin, 0, SEEK_SET);
+  return s;
+}
+
+static uint8_t *fileLoad(FILE *fin, size_t *s)
+{
+  *s = fileSize(fin);
+  uint8_t *mem = (uint8_t *)malloc(*s);
+  if (mem != NULL)
+    *s = fread(mem, 1, *s, fin);
+  return mem;
+}
+
+static int fileCompareFile(FILE *file0, FILE *file1)
+{
+  int result = 0;
+  size_t s0, s1;
+  uint8_t *mem0 = fileLoad(file0, &s0);
+  uint8_t *mem1 = fileLoad(file1, &s1);
+  if ((mem0 == NULL) || (mem1 == NULL) || (s0 != s1))
+    result = 1;
+  else
+  {
+    result = memcmp(mem0, mem1, s0);
+  }
+  if (mem0 != 0)
+    free(mem0);
+  if (mem1 != 0)
+    free(mem1);
+  return result;
+}
+
+static int fileCompare(const char *file0, const char *file1)
+{
+  int result = 0;
+  FILE *f0 = fopen(file0, "rb");
+  FILE *f1 = fopen(file1, "rb");
+  if ((f0 == NULL) || (f1 == NULL))
+    result = 1;
+  else
+  {
+    result = fileCompareFile(f0, f1);
+  }
+  if (f0 != NULL)
+    fclose(f0);
+  if (f1 != NULL)
+    fclose(f1);
+  return result;
+}
+
 static void canLogger_test()
 {
   printf("Executing canLogger_test\n");
@@ -251,6 +305,8 @@ static void canLogger_test()
   assert(device_close(fd_can1) == 0);
   assert(device_close(fd_can2) == 0);
   assert(device_close(fd_can3) == 0);
+  logger.close();
+  assert(fileCompare("canlogger_test.asc", "canlogger_test_data.asc") == 0);
 }
 
 int main(int argc, const char **argv)
@@ -269,5 +325,6 @@ int main(int argc, const char **argv)
   vCAN_Test();
   networkCrossTalk_test();
   canLogger_test();
+  assert(device_close(systemTimer) == 0);
   return 0;
 }
