@@ -36,7 +36,12 @@ CanLogger::~CanLogger()
 void CanLogger::canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg)
 {
   if (fout != NULL)
-    fprintf(fout, " 1.123456 %2d %d %c%08x %02x %02x\n", cbData->devIdx, (msg.id & 0x80000000) ? 'x' : ' ', msg.id, msg.dlc, msg.data[0], msg.data[1]);
+  {
+    fprintf(fout, " 1.123456 %2d %c%08x %d", cbData->devIdx, (msg.id & 0x80000000) ? 'x' : ' ', msg.id, msg.dlc);
+    for (uint32_t i = 0; i < msg.dlc; i++)
+        fprintf(fout, " %02x", msg.data[i]);
+    fprintf(fout, "\n");
+  }
 }
 
 void CanLogger::addBus(t_network_id net, const char *busname)
