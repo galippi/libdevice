@@ -6,7 +6,8 @@ static void canWriteCbFunc(t_device_fd fd, void *data)
   while(device_read(fd, &msg, sizeof(msg)) == sizeof(msg))
   {
     CanLoggerCbData *cbData = (CanLoggerCbData*)data;
-    cbData->logger->canWriteCb(cbData, msg);
+    CanLogger *logger = cbData->logger;
+    logger->canWriteCb(cbData, msg);
   }
 }
 
@@ -45,6 +46,6 @@ void CanLogger::addBus(t_network_id net, const char *busname)
   devices[devIdx] = new CanLoggerCbData(device_open(net, busname, 0), devIdx, this, cbData);
   assert(devices[devIdx] != NULL);
   cbData->deviceCanWriteCbFunc = canWriteCbFunc;
-  cbData->data = this;
+  cbData->data = devices[devIdx];
   device_ioctl(devices[devIdx]->fd, e_DeviceCanSetWriteCb, (void*)cbData);
 }

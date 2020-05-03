@@ -155,6 +155,7 @@ extern "C" t_device_fd device_open(t_network_id netId, const char *device, int f
           {
             deviceDescr.push_back(dev);
           }
+          device_ioctl(idx, e_DeviceBaseSetSystemFd, &idx); /* forwarding the system-fd value to the low-leve driver */
           return idx;
         }else
         { /* bus-open error -> nothing to do */
@@ -183,6 +184,19 @@ extern "C" int device_ioctl(t_device_fd fd, unsigned long int request, void *dat
   switch (request)
   {
     case e_DeviceBaseSetWriteCallback:
+    {
+      t_BusWriteCallBack *cbPtr = (t_BusWriteCallBack*)data;
+      cbPtr->fdBus = fd;
+      cbPtr->fdDevice = dev->fd;
+      dev->writeCallback.insert(std::pair<t_device_fd, t_BusWriteCallBack*>(fd, cbPtr));
+      return 0;
+    }
+    case e_DeviceBaseSetSystemFd:
+    {
+      dev->device->ioctl(dev->fd, request, data);
+      return 0;
+    }
+    case e_DeviceBaseGetGlobalFd:
     {
       t_BusWriteCallBack *cbPtr = (t_BusWriteCallBack*)data;
       cbPtr->fdBus = fd;

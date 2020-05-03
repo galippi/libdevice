@@ -36,7 +36,7 @@ class LibDeviceBase
     virtual int write(t_device_fd fd, const void *buf, unsigned int n) = 0;
     virtual int ioctl(t_device_fd fd, unsigned long int request, void *data)
     { // not used function
-      assert(0);
+      //assert(0);
       return -1;
     }
   private:
@@ -124,6 +124,8 @@ struct s_BusWriteCallBack
 typedef enum
 {
   e_DeviceBaseSetWriteCallback,
+  e_DeviceBaseSetSystemFd,
+  e_DeviceBaseGetGlobalFd,
   e_DeviceBaseLast,
 }e_DeviceBaseIoctl;
 

@@ -18,6 +18,7 @@ public:
     Msgs = (t_LibDeviceCAN*)malloc(this->size * sizeof(t_LibDeviceCAN));
     writeCallbackData = NULL;
     this->fd = fd;
+    fdSystem = -1;
   }
   ~DeviceBusCANConnection()
   {
@@ -63,7 +64,8 @@ public:
   void overflow()
   { /* overflow handler */
   }
-  t_device_fd fd;
+  t_device_fd fd; /* internal id */
+  t_device_fd fdSystem; /* system id */
   t_LibDeviceCAN *Msgs;
   unsigned inIdx, outIdx;
   unsigned size;
@@ -162,29 +164,42 @@ public:
     int res = n;
     while(it != conn.end())
     {
-      if (it->second->put(msg) != 0)
+      DeviceBusCANConnection *deviceBusCANConnection = it->second;
+      if (deviceBusCANConnection->put(msg) != 0)
         res = -1;
       else
-        if (it->second->writeCallbackData != NULL)
-          it->second->writeCallbackData->deviceCanWriteCbFunc(it->second->fd, it->second->writeCallbackData->data);
+        if (deviceBusCANConnection->writeCallbackData != NULL)
+        	deviceBusCANConnection->writeCallbackData->deviceCanWriteCbFunc(deviceBusCANConnection->fdSystem, deviceBusCANConnection->writeCallbackData->data);
       it++;
     }
     return res;
   }
   int ioctl(t_device_fd fd, unsigned long int request, void *data)
   {
-    if (request == e_DeviceCanSetWriteCb)
+    switch(request)
     {
-        DeviceBusCAN *busPtr = (DeviceBusCAN*)bus[fd];
-        assert(busPtr != NULL);
-        auto it = busPtr->connectionList.find(fd);
-        assert(it != busPtr->connectionList.end());
-        it->second->writeCallbackData = (t_DeviceCanWriteCbData*)data;
-        return 0;
-    }else
-    {
-      assert(0); /* not implemented request */
-      return -1;
+      case e_DeviceCanSetWriteCb:
+      {
+          DeviceBusCAN *busPtr = (DeviceBusCAN*)bus[fd];
+          assert(busPtr != NULL);
+          auto it = busPtr->connectionList.find(fd);
+          assert(it != busPtr->connectionList.end());
+          it->second->writeCallbackData = (t_DeviceCanWriteCbData*)data;
+          return 0;
+      }
+      case e_DeviceBaseSetSystemFd:
+      {
+    	  int systemFd = *(t_device_fd*)data;
+          DeviceBusCAN *busPtr = (DeviceBusCAN*)bus[fd];
+          assert(busPtr != NULL);
+          auto it = busPtr->connectionList.find(fd);
+          assert(it != busPtr->connectionList.end());
+          it->second->fdSystem = systemFd;
+          return 0;
+      }
+      default:
+          assert(0); /* not implemented request */
+          return -1;
     }
   }
 };
