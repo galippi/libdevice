@@ -11,9 +11,9 @@ CFLAGS  += -Ivcan/src -Ivcan/include -Ivcan/include/linux
 CPPFLAGS   = $(CFLAGS) -fno-rtti
 CPPFLAGS += -std=c++11
 
-#LDFLAGS_STRIP_DEVUG_INFO = -s
+#LDFLAGS_STRIP_DEBUG_INFO = -s
 # LDFLAGS  = -s  $(CFLAGS_NO_CYGWIN_DLL) -lcrypto -lssl #-lsocket -lnsl
-LDFLAGS  = $(LDFLAGS_STRIP_DEVUG_INFO)  $(CFLAGS_NO_CYGWIN_DLL) #-lsocket -lnsl
+LDFLAGS  = $(LDFLAGS_STRIP_DEBUG_INFO)  $(CFLAGS_NO_CYGWIN_DLL)
 #LDFLAGS += -L./pc-libs
 #LDLIBS = -lcrypto
 #LDLIBS += -lSDL_image
@@ -46,10 +46,11 @@ CPPFILES+= canlogger_libdevice.cpp
 #CFILES    = $(TARGET).c
 #CFILES   = c_file.c
 #CFILES  += SDL_WM_mini.c
-VPATH += vcan/src
+VPATH += . vcan/src $(TARGET_DIR)
 CFILES += vcan.c
 
-OBJECTS = $(addprefix $(TARGET_DIR)/,$(CPPFILES:.cpp=.o) $(CFILES:.c=.o))
+#OBJECTS = $(addprefix $(TARGET_DIR)/,$(CPPFILES:.cpp=.o) $(CFILES:.c=.o))
+OBJECTS = $(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
 DEPFILES = $(addprefix $(TARGET_DIR)/,$(CPPFILES:.cpp=.d) $(CFILES:.c=.d))
 
 TARGET_EXE = $(TARGET_DIR)/$(TARGET).exe
@@ -59,21 +60,23 @@ all : $(TARGET_EXE)
 dummy:
 
 $(TARGET_EXE) : $(OBJECTS)
-	$(LL) $^ $(LDFLAGS) $(LDLIBS) -o $@
+	@echo OBJECTS=$(OBJECTS)
+	@echo ^=$^
+	$(LL) $(addprefix $(TARGET_DIR)/,$(notdir $^)) $(LDFLAGS) $(LDLIBS) -o $@
 
 #%.o: %.c $(MAKEFILE)
-$(TARGET_DIR)/%.o: %.c $(DUMMY_DIR_FILE)
+%.o: %.c $(DUMMY_DIR_FILE)
 	@echo Building $@
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $(TARGET_DIR)/$@ $<
 	-@rm -f $(@:.o=.d)
-	$(CC) -M $(CFLAGS) -c -o $(@:.o=.d) $<
+	$(CC) -M $(CFLAGS) -c -o $(TARGET_DIR)/$(@:.o=.d) $<
 
 #%.o: %.cpp $(MAKEFILE)
-$(TARGET_DIR)/%.o: %.cpp $(DUMMY_DIR_FILE)
+%.o: %.cpp $(DUMMY_DIR_FILE)
 	@echo Building $@
-	$(CC) $(CPPFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) -c -o $(TARGET_DIR)/$@ $<
 	-@rm -f $(@:.o=.d)
-	$(CC) -M $(CPPFLAGS) -c -o $(@:.o=.d) $<
+	$(CC) -M $(CPPFLAGS) -c -o $(TARGET_DIR)/$(@:.o=.d) $<
 
 $(DUMMY_DIR_FILE):
 	-mkdir $(TARGET_DIR)
@@ -90,4 +93,5 @@ dep_test:
 	@echo DEPFILES=$(DEPFILES)
 	@echo wildcard=$(wildcard $(DEPFILES))
 
-include $(wildcard $(DEPFILES))
+#include $(wildcard $(DEPFILES))
+include $(DEPFILES)
