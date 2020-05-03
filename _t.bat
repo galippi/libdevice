@@ -1,2 +1,2 @@
 @path=C:\Programok\cygwin\bin;%PATH%
-libdevice_test.exe
+bin\libdevice_test.exe
