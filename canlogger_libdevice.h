@@ -34,6 +34,7 @@ class CanLogger
     ~CanLogger();
     void addBus(t_network_id id, const char *busname);
     void canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg);
+    void close(void);
   private:
     FILE *fout;
     CanLoggerCbData *devices[CANLOGGER_DEVICES_MAX];

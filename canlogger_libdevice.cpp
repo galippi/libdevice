@@ -22,16 +22,23 @@ CanLogger::CanLogger(const char *filename)
   }
 }
 
-CanLogger::~CanLogger()
+void CanLogger::close(void)
 {
   if (fout != NULL)
     fclose(fout);
+  fout = NULL;
   for (int idx = 0; idx < nextDevIdx; idx++)
   {
     device_close(devices[idx]->fd);
     free(devices[idx]->cbData);
     delete devices[idx];
   }
+  nextDevIdx = 0;
+}
+
+CanLogger::~CanLogger()
+{
+  close();
 }
 
 void CanLogger::canWriteCb(CanLoggerCbData *cbData, t_LibDeviceCAN msg)
