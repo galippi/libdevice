@@ -223,11 +223,11 @@ static void canLogger_test()
   printf("Executing canLogger_test\n");
   t_network_id net0 = network_open("base");
   CanLogger logger("canlogger_test.asc");
-  const char *busname = "/dev/can/J1939";
-  logger.addBus(net0, busname);
-  t_device_fd fd_can1 = device_open(net0, busname, 0);
+  const char *busname0 = "/dev/can/J1939";
+  logger.addBus(net0, busname0);
+  t_device_fd fd_can1 = device_open(net0, busname0, 0);
   assert(fd_can1 >= 0);
-  t_device_fd fd_can2 = device_open(net0, busname, 0);
+  t_device_fd fd_can2 = device_open(net0, busname0, 0);
   assert(fd_can2 >= 0);
   t_LibDeviceCAN msg = {0x1234, 8, {0, 1, 2, 3, 4, 5, 6, 7}};
   assert(device_write(fd_can1, &msg, sizeof(msg)) == sizeof(msg));
@@ -235,8 +235,18 @@ static void canLogger_test()
   msg.dlc = 5;
   msg.data[2] = 0x22;
   assert(device_write(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
+  const char *busname1 = "/dev/can/sensor";
+  logger.addBus(net0, busname1);
+  t_device_fd fd_can3 = device_open(net0, busname1, 0);
+  assert(fd_can3 >= 0);
+  msg.id = 0x11;
+  msg.dlc = 7;
+  msg.data[1] = 0x11;
+  assert(device_write(fd_can3, &msg, sizeof(msg)) == sizeof(msg));
+  assert(device_write(fd_can2, &msg, sizeof(msg)) == sizeof(msg));
   assert(device_close(fd_can1) == 0);
   assert(device_close(fd_can2) == 0);
+  assert(device_close(fd_can3) == 0);
 }
 
 int main(int argc, const char **argv)
